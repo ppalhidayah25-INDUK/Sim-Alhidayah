@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>PesantrenPro — Sistem Manajemen Pondok Pesantren Alhidayah Induk</title>
+<meta name="description" content="Sistem Manajemen Pondok Pesantren Alhidayah Induk">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Lexend"', 'sans-serif'],
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        colors: {
+          emerald: {
+            25: '#f2fbf7',
+            950: '#022c1e',
+          },
+        },
+        boxShadow: {
+          soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
+          card: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
+          pop: '0 10px 40px -10px rgb(0 0 0 / 0.25)',
+        },
+        animation: {
+          'fade-in': 'fadeIn .35s ease-out',
+          'slide-up': 'slideUp .35s cubic-bezier(.16,1,.3,1)',
+          'slide-in-right': 'slideInRight .3s cubic-bezier(.16,1,.3,1)',
+          'scale-in': 'scaleIn .2s cubic-bezier(.16,1,.3,1)',
+          shimmer: 'shimmer 1.6s infinite',
+        },
+        keyframes: {
+          fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+          slideUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+          slideInRight: { '0%': { opacity: 0, transform: 'translateX(16px)' }, '100%': { opacity: 1, transform: 'translateX(0)' } },
+          scaleIn: { '0%': { opacity: 0, transform: 'scale(.96)' }, '100%': { opacity: 1, transform: 'scale(1)' } },
+          shimmer: { '0%': { backgroundPosition: '-400px 0' }, '100%': { backgroundPosition: '400px 0' } },
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<!-- Alpine.js -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+
+<style>
+  :root{
+    --pesantren-primary: #059669;
+  }
+  html { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior:smooth; }
+  h1,h2,h3,h4,h5,.font-display{ font-family:'Lexend',sans-serif; }
+  .font-mono-num{ font-family:'JetBrains Mono',monospace; }
+
+  [x-cloak]{ display:none !important; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:8px; }
+  .dark ::-webkit-scrollbar-thumb{ background:#3f4a52; }
+  ::-webkit-scrollbar-thumb:hover{ background:#94a3b8; }
+
+  .skeleton{
+    background:linear-gradient(90deg,#e2e8f0 0px,#f1f5f9 40px,#e2e8f0 80px);
+    background-size:600px;
+    animation:shimmer 1.6s infinite linear;
+  }
+  .dark .skeleton{ background:linear-gradient(90deg,#293238 0px,#333e46 40px,#293238 80px); background-size:600px; }
+
+  .sidebar-scroll::-webkit-scrollbar{ width:5px; }
+
+  .glass{
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+  }
+
+  input[type=checkbox].pp-check{ accent-color:#059669; }
+  input[type=radio].pp-radio{ accent-color:#059669; }
+
+  .badge-dot::before{
+    content:''; display:inline-block; width:6px; height:6px; border-radius:999px; margin-right:6px; background:currentColor;
+  }
+
+  .step-line{ background:linear-gradient(90deg,#059669 var(--p,0%),#e2e8f0 var(--p,0%)); }
+  .dark .step-line{ background:linear-gradient(90deg,#10b981 var(--p,0%),#334155 var(--p,0%)); }
+
+  @media print {
+    .no-print{ display:none !important; }
+    body{ background:#fff !important; }
+    main{ padding:0 !important; max-width:100% !important; }
+    .shadow-card, .shadow-soft, .shadow-pop{ box-shadow:none !important; }
+    #print-area{ position:static !important; }
+  }
+
+  .crop-canvas{ touch-action:none; cursor:grab; }
+  .crop-canvas:active{ cursor:grabbing; }
+</style>
+</head>
+<body x-data="app()" x-init="init()" x-cloak
+      :class="darkMode ? 'dark' : ''"
+      class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+
+<!-- ============================= TOASTS ============================= -->
+<div class="fixed top-4 right-4 z-[100] space-y-2 w-[calc(100%-2rem)] max-w-sm no-print">
+  <template x-for="t in toasts" :key="t.id">
+    <div x-show="true" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-6"
+         x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="flex items-start gap-3 rounded-xl shadow-pop border px-4 py-3 bg-white dark:bg-slate-900"
+         :class="{
+            'border-emerald-200 dark:border-emerald-900': t.type==='success',
+            'border-red-200 dark:border-red-900': t.type==='error',
+            'border-amber-200 dark:border-amber-900': t.type==='warning',
+            'border-slate-200 dark:border-slate-800': t.type==='info'
+         }">
+      <div class="mt-0.5 shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+           :class="{
+              'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400': t.type==='success',
+              'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400': t.type==='error',
+              'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400': t.type==='warning',
+              'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300': t.type==='info'
+           }">
+        <i data-lucide="check" class="w-4 h-4" x-show="t.type==='success'"></i>
+        <i data-lucide="x" class="w-4 h-4" x-show="t.type==='error'"></i>
+        <i data-lucide="alert-triangle" class="w-4 h-4" x-show="t.type==='warning'"></i>
+        <i data-lucide="info" class="w-4 h-4" x-show="t.type==='info'"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="t.title"></p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="t.message"></p>
+      </div>
+      <button @click="toasts = toasts.filter(x=>x.id!==t.id)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </template>
+</div>
+
+<!-- ============================= LOGIN SCREEN ============================= -->
+<div x-show="!auth.loggedIn" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+     class="min-h-screen flex items-stretch">
+  <!-- left brand panel -->
+  <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-emerald-950">
+    <div class="absolute inset-0 opacity-[0.15]" style="background-image: radial-gradient(circle at 2px 2px, #fff 1px, transparent 0); background-size: 28px 28px;"></div>
+    <div class="absolute -top-24 -right-24 w-96 h-96 bg-emerald-600/30 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-emerald-500/20 rounded-full blur-3xl"></div>
+    <div class="relative z-10 flex flex-col justify-between p-14 text-white w-full">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+          <i data-lucide="book-open-check" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <p class="font-display font-bold text-lg leading-none">PesantrenPro</p>
+          <p class="text-emerald-300 text-xs mt-1">Pondok Pesantren Alhidayah Induk</p>
+        </div>
+      </div>
+      <div class="max-w-md">
+        <p class="font-display text-4xl font-bold leading-tight">Satu sistem,<br>seluruh urusan pondok.</p>
+        <p class="text-emerald-200/80 mt-4 text-sm leading-relaxed">Kelola data santri, guru, keuangan, dan keamanan pondok dalam satu dashboard yang rapi, cepat, dan mudah dipantau setiap hari.</p>
+        <div class="flex items-center gap-6 mt-8">
+          <div>
+            <p class="font-display text-2xl font-bold" x-text="stats.totalSantri"></p>
+            <p class="text-emerald-300/70 text-xs mt-0.5">Santri Aktif</p>
+          </div>
+          <div class="w-px h-9 bg-emerald-700/60"></div>
+          <div>
+            <p class="font-display text-2xl font-bold" x-text="stats.totalGuru"></p>
+            <p class="text-emerald-300/70 text-xs mt-0.5">Guru &amp; Ustadz</p>
+          </div>
+          <div class="w-px h-9 bg-emerald-700/60"></div>
+          <div>
+            <p class="font-display text-2xl font-bold" x-text="stats.totalAlumni"></p>
+            <p class="text-emerald-300/70 text-xs mt-0.5">Alumni</p>
+          </div>
+        </div>
+      </div>
+      <p class="text-emerald-400/50 text-xs">&copy; <span x-text="new Date().getFullYear()"></span> PesantrenPro. Dibangun untuk Pondok Pesantren Alhidayah Induk.</p>
+    </div>
+  </div>
+
+  <!-- right form panel -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 bg-white dark:bg-slate-950">
+    <div class="w-full max-w-sm animate-fade-in">
+      <div class="flex lg:hidden items-center gap-3 mb-10 justify-center">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
+          <i data-lucide="book-open-check" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <p class="font-display font-bold leading-none text-slate-800 dark:text-white">PesantrenPro</p>
+          <p class="text-slate-400 text-[11px] mt-1">Pondok Pesantren Alhidayah Induk</p>
+        </div>
+      </div>
+
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-white">Masuk ke akun Anda</h1>
+      <p class="text-slate-500 dark:text-slate-400 text-sm mt-1.5">Silakan masuk untuk mengelola data pondok.</p>
+
+      <form class="mt-8 space-y-4" @submit.prevent="login()">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Username atau Email</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" x-model="loginForm.username" required placeholder="admin@alhidayah.sch.id"
+                   class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-400">
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block">Password</label>
+            <button type="button" @click="showForgot=true" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">Lupa Password?</button>
+          </div>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input :type="showPass ? 'text' : 'password'" x-model="loginForm.password" required placeholder="••••••••"
+                   class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-400">
+            <button type="button" @click="showPass=!showPass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <i :data-lucide="showPass ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Masuk sebagai (demo)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <template x-for="r in ['super_admin','bendahara','keamanan']" :key="r">
+              <button type="button" @click="loginForm.role=r"
+                      class="text-[11px] font-semibold py-2 rounded-lg border transition"
+                      :class="loginForm.role===r ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-emerald-300'"
+                      x-text="roleLabel(r)"></button>
+            </template>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" class="pp-check w-4 h-4 rounded" x-model="loginForm.remember">
+            Ingat saya
+          </label>
+        </div>
+
+        <button type="submit" :disabled="loginLoading"
+                class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 text-white text-sm font-semibold py-2.75 rounded-xl transition flex items-center justify-center gap-2 shadow-soft py-2.5">
+          <svg x-show="loginLoading" class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span x-text="loginLoading ? 'Memproses...' : 'Masuk'"></span>
+        </button>
+        <p class="text-[11px] text-slate-400 text-center pt-2">Kredensial demo terisi otomatis. Klik salah satu peran lalu tekan Masuk.</p>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- END LOGIN SCREEN -->
+
+<!-- ============================= FORGOT PASSWORD MODAL ============================= -->
+<div x-show="showForgot" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="showForgot=false" x-transition.opacity></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-pop w-full max-w-sm p-6 animate-scale-in">
+    <div class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
+      <i data-lucide="key-round" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+    </div>
+    <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Reset Password</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Masukkan email akun Anda, tautan reset akan dikirimkan oleh administrator sistem.</p>
+    <input type="email" placeholder="email@alhidayah.sch.id" x-model="forgotEmail"
+           class="w-full mt-4 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+    <div class="flex gap-2 mt-5">
+      <button @click="showForgot=false" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Batal</button>
+      <button @click="sendResetLink()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Kirim Tautan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= MAIN APP SHELL ============================= -->
+<template x-if="auth.loggedIn">
+<div class="min-h-screen flex animate-fade-in">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside :class="sidebarOpen ? 'w-64' : 'w-[76px]'"
+         class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 transition-all duration-300 h-screen sticky top-0 no-print">
+    <div class="h-16 flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
+        <i data-lucide="book-open-check" class="w-5 h-5 text-white"></i>
+      </div>
+      <div x-show="sidebarOpen" x-transition.opacity class="min-w-0">
+        <p class="font-display font-bold text-sm text-slate-800 dark:text-white leading-none truncate">PesantrenPro</p>
+        <p class="text-[10px] text-slate-400 mt-1 truncate">Alhidayah Induk</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto sidebar-scroll py-3 px-2.5 space-y-4">
+      <template x-for="(group, gi) in menu" :key="gi">
+        <div x-show="group.items.some(it => canSee(it))">
+          <p x-show="sidebarOpen && group.group" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2.5 mb-1.5" x-text="group.group"></p>
+          <div class="space-y-0.5">
+            <template x-for="item in group.items" :key="item.key">
+              <button x-show="canSee(item)" @click="navigate(item)" :title="!sidebarOpen ? item.label : ''"
+                      class="w-full flex items-center gap-3 px-2.5 py-2.25 rounded-xl text-sm transition group relative"
+                      :class="isActive(item) ? 'bg-emerald-600 text-white shadow-soft' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'">
+                <i :data-lucide="item.icon" class="w-4.5 h-4.5 shrink-0" :class="isActive(item) ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'" style="width:18px;height:18px"></i>
+                <span x-show="sidebarOpen" class="truncate font-medium" x-text="item.label"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+    </nav>
+
+    <div class="p-2.5 border-t border-slate-100 dark:border-slate-800">
+      <button @click="logout()" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition">
+        <i data-lucide="log-out" style="width:18px;height:18px" class="shrink-0"></i>
+        <span x-show="sidebarOpen">Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MOBILE SIDEBAR DRAWER ===== -->
+  <div x-show="mobileNavOpen" x-cloak class="md:hidden fixed inset-0 z-[80]" style="display:none">
+    <div class="absolute inset-0 bg-slate-900/50" @click="mobileNavOpen=false" x-transition.opacity></div>
+    <aside class="absolute left-0 top-0 h-full w-72 bg-white dark:bg-slate-900 shadow-pop flex flex-col animate-slide-in-right" style="animation-name:slideInLeftMobile" x-transition:enter="transition ease-out duration-250" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0">
+      <div class="h-16 flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-800 justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center"><i data-lucide="book-open-check" class="w-5 h-5 text-white"></i></div>
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">PesantrenPro</p>
+        </div>
+        <button @click="mobileNavOpen=false" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <nav class="flex-1 overflow-y-auto py-3 px-2.5 space-y-4">
+        <template x-for="(group, gi) in menu" :key="'m'+gi">
+          <div x-show="group.items.some(it => canSee(it))">
+            <p x-show="group.group" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2.5 mb-1.5" x-text="group.group"></p>
+            <div class="space-y-0.5">
+              <template x-for="item in group.items" :key="'mi'+item.key">
+                <button x-show="canSee(item)" @click="navigate(item); mobileNavOpen=false"
+                        class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm transition"
+                        :class="isActive(item) ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'">
+                  <i :data-lucide="item.icon" style="width:18px;height:18px" class="shrink-0"></i>
+                  <span class="truncate font-medium" x-text="item.label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </template>
+      </nav>
+      <div class="p-2.5 border-t border-slate-100 dark:border-slate-800">
+        <button @click="logout()" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40">
+          <i data-lucide="log-out" style="width:18px;height:18px"></i> Logout
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== MAIN COLUMN ===== -->
+  <div class="flex-1 min-w-0 flex flex-col">
+    <!-- HEADER -->
+    <header class="h-16 sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 glass border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 px-4 sm:px-6 no-print">
+      <button @click="mobileNavOpen=true" class="md:hidden text-slate-500 dark:text-slate-400"><i data-lucide="menu" class="w-5 h-5"></i></button>
+      <button @click="sidebarOpen=!sidebarOpen" class="hidden md:flex text-slate-400 hover:text-emerald-600 transition"><i data-lucide="panel-left" class="w-5 h-5"></i></button>
+
+      <div class="hidden sm:flex items-center gap-2 flex-1 max-w-md relative">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5"></i>
+        <input type="text" x-model="globalSearch" @input="doGlobalSearch()" @focus="globalSearchOpen=true" @keydown.escape="globalSearchOpen=false"
+               placeholder="Cari santri, guru, alumni... (Ctrl+K)"
+               class="w-full pl-10 pr-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none transition">
+        <div x-show="globalSearchOpen && globalSearch.length>0" @click.outside="globalSearchOpen=false" x-cloak
+             class="absolute top-11 left-0 right-0 bg-white dark:bg-slate-900 rounded-xl shadow-pop border border-slate-100 dark:border-slate-800 max-h-80 overflow-y-auto z-40">
+          <template x-if="globalSearchResults.length===0">
+            <p class="text-xs text-slate-400 px-4 py-6 text-center">Tidak ada hasil untuk "<span x-text="globalSearch"></span>"</p>
+          </template>
+          <template x-for="r in globalSearchResults" :key="r.id+r.type">
+            <button @click="goToSearchResult(r)" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-left">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                <i :data-lucide="r.icon" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate" x-text="r.name"></p>
+                <p class="text-[11px] text-slate-400" x-text="r.type"></p>
+              </div>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div class="flex-1 sm:hidden"></div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 ml-auto">
+        <button @click="darkMode=!darkMode" class="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4.5 h-4.5" style="width:18px;height:18px"></i>
+        </button>
+
+        <div class="relative">
+          <button @click="notifOpen=!notifOpen; profileOpen=false" class="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition relative">
+            <i data-lucide="bell" style="width:18px;height:18px"></i>
+            <span x-show="unreadNotif>0" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
+          </button>
+          <div x-show="notifOpen" @click.outside="notifOpen=false" x-cloak x-transition
+               class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-pop border border-slate-100 dark:border-slate-800 overflow-hidden z-40">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">Notifikasi</p>
+              <button @click="markAllRead()" class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">Tandai dibaca</button>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+              <template x-for="n in notifications" :key="n.id">
+                <div class="px-4 py-3 border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/50" :class="!n.read && 'bg-emerald-50/50 dark:bg-emerald-900/10'">
+                  <div class="flex items-start gap-2.5">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" x-show="!n.read"></div>
+                    <div class="min-w-0" :class="n.read && 'pl-4.5'">
+                      <p class="text-xs font-semibold text-slate-700 dark:text-slate-200" x-text="n.title"></p>
+                      <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" x-text="n.message"></p>
+                      <p class="text-[10px] text-slate-400 mt-1" x-text="n.time"></p>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative">
+          <button @click="profileOpen=!profileOpen; notifOpen=false" class="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <div class="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shrink-0" x-text="auth.user.name.charAt(0)"></div>
+            <div class="hidden sm:block text-left">
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-none" x-text="auth.user.name"></p>
+              <p class="text-[10px] text-slate-400 mt-0.5" x-text="roleLabel(auth.user.role)"></p>
+            </div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 hidden sm:block"></i>
+          </button>
+          <div x-show="profileOpen" @click.outside="profileOpen=false" x-cloak x-transition
+               class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-pop border border-slate-100 dark:border-slate-800 overflow-hidden z-40 py-1.5">
+            <button @click="currentPage='profil'; profileOpen=false" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="user-circle" class="w-4 h-4"></i> Profil Saya</button>
+            <button x-show="auth.user.role==='super_admin'" @click="currentPage='pengaturan'; profileOpen=false" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="settings" class="w-4 h-4"></i> Pengaturan</button>
+            <div class="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+            <button @click="logout()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"><i data-lucide="log-out" class="w-4 h-4"></i> Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto" :class="(receiptOpen || santriDetailOpen) && 'print:hidden'">
+
+      <!-- breadcrumb -->
+      <div class="flex items-center gap-1.5 text-xs text-slate-400 mb-4 no-print">
+        <i data-lucide="home" class="w-3.5 h-3.5"></i>
+        <span>PesantrenPro</span>
+        <i data-lucide="chevron-right" class="w-3 h-3"></i>
+        <span class="text-slate-600 dark:text-slate-300 font-medium" x-text="pageTitle()"></span>
+      </div>
+
+      <!-- ACCESS DENIED -->
+      <template x-if="!canAccessCurrentPage()">
+        <div class="flex flex-col items-center justify-center text-center py-24 animate-fade-in">
+          <div class="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-4">
+            <i data-lucide="shield-alert" class="w-8 h-8 text-red-500"></i>
+          </div>
+          <h2 class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">Akses Ditolak</h2>
+          <p class="text-sm text-slate-400 mt-1 max-w-xs">Peran Anda saat ini tidak memiliki izin untuk membuka halaman ini.</p>
+          <button @click="navigate(menu[0].items[0])" class="mt-5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-xl">Kembali ke Dashboard</button>
+        </div>
+      </template>
+
+<!-- ============================= DASHBOARD ============================= -->
+<template x-if="currentPage==='dashboard' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">Selamat datang, <span x-text="auth.user.name.split(' ')[0]"></span> 👋</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" x-text="todayText()"></p>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">
+        <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+        Tahun Ajaran <span class="font-semibold text-slate-600 dark:text-slate-300" x-text="tahunAjaran"></span>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <template x-for="c in dashboardCards()" :key="c.label">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 hover:shadow-card transition group">
+          <div class="flex items-start justify-between">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :class="c.bg">
+              <i :data-lucide="c.icon" class="w-5 h-5" :class="c.fg"></i>
+            </div>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" :class="c.trend>=0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' : 'text-red-500 bg-red-50 dark:bg-red-900/30'">
+              <span x-text="(c.trend>=0?'+':'')+c.trend+'%'"></span>
+            </span>
+          </div>
+          <p class="font-mono-num text-2xl font-bold text-slate-800 dark:text-white mt-3" x-text="c.value"></p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="c.label"></p>
+        </div>
+      </template>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white">Statistik Santri per Angkatan</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Jumlah santri aktif berdasarkan tahun masuk</p>
+          </div>
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-300"></i>
+        </div>
+        <canvas id="chartSantri" height="230"></canvas>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white">Statistik Alumni</h3>
+          <i data-lucide="graduation-cap" class="w-4 h-4 text-slate-300"></i>
+        </div>
+        <canvas id="chartAlumni" height="230"></canvas>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white">Statistik Pembayaran Keuangan</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Total nominal pembayaran per bulan, tahun <span x-text="tahunAjaran"></span></p>
+          </div>
+          <i data-lucide="trending-up" class="w-4 h-4 text-slate-300"></i>
+        </div>
+        <canvas id="chartKeuangan" height="230"></canvas>
+      </div>
+
+      <!-- widgets -->
+      <div class="space-y-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+          <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white mb-3">Pengumuman</h3>
+          <div class="space-y-3 max-h-40 overflow-y-auto">
+            <template x-for="p in pengumuman" :key="p.id">
+              <div class="flex gap-2.5">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                <div>
+                  <p class="text-xs font-semibold text-slate-700 dark:text-slate-200" x-text="p.judul"></p>
+                  <p class="text-[11px] text-slate-400 mt-0.5" x-text="p.tanggal"></p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+        <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white mb-4">Aktivitas Terbaru</h3>
+        <div class="space-y-4 max-h-72 overflow-y-auto pr-1">
+          <template x-for="a in activityLog.slice(0,8)" :key="a.id">
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-slate-400"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs text-slate-600 dark:text-slate-300"><span class="font-semibold" x-text="a.user"></span> <span x-text="a.aksi"></span></p>
+                <p class="text-[10px] text-slate-400 mt-0.5" x-text="a.waktu"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+        <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white mb-4">Agenda Kegiatan Pondok</h3>
+        <div class="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <template x-for="ag in agenda" :key="ag.id">
+            <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60">
+              <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col items-center justify-center shrink-0">
+                <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase leading-none" x-text="ag.bulan"></span>
+                <span class="text-sm font-bold text-emerald-700 dark:text-emerald-300 leading-none mt-0.5" x-text="ag.tgl"></span>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" x-text="ag.judul"></p>
+                <p class="text-[11px] text-slate-400 mt-0.5" x-text="ag.waktu + ' · ' + ag.tempat"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= DATA SANTRI ============================= -->
+<template x-if="currentPage==='santri' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white" x-text="'Data Santri ' + (currentParams.gender==='L' ? 'Putra' : 'Putri')"></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="filteredSantri().length"></span> santri terdaftar</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 no-print">
+        <button @click="triggerImport('santri')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="upload" class="w-3.5 h-3.5"></i> Import Excel</button>
+        <input type="file" class="hidden" :id="'import-santri'" accept=".csv" @change="handleImport($event,'santri')">
+        <button @click="exportCSV(filteredSantri(),'santri')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export Excel</button>
+        <button @click="exportPDF('Data Santri')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> Export PDF</button>
+        <button @click="openSantriWizard()" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Santri</button>
+      </div>
+    </div>
+
+    <!-- filters -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 flex flex-col lg:flex-row lg:items-center gap-2.5 no-print">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input type="text" x-model="santriFilter.q" placeholder="Cari nama, NIS, atau NISN..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      </div>
+      <select x-model="santriFilter.jenjang" class="text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2">
+        <option value="">Semua Jenjang</option>
+        <option>MI</option><option>MTS</option><option>MA</option>
+      </select>
+      <select x-model="santriFilter.status" class="text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2">
+        <option value="">Semua Status</option>
+        <option>Aktif</option><option>Nonaktif</option>
+      </select>
+      <select x-model="santriFilter.angkatan" class="text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2">
+        <option value="">Semua Angkatan</option>
+        <template x-for="y in angkatanList()" :key="y"><option x-text="y"></option></template>
+      </select>
+      <button @click="santriFilter={q:'',jenjang:'',status:'',angkatan:''}" class="text-xs font-semibold text-slate-400 hover:text-emerald-600 px-2">Reset</button>
+    </div>
+
+    <!-- table -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="px-4 py-3 font-semibold">Santri</th>
+              <th class="px-4 py-3 font-semibold">NIS / NISN</th>
+              <th class="px-4 py-3 font-semibold">Jenjang</th>
+              <th class="px-4 py-3 font-semibold">Angkatan</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-if="loadingTable">
+              <template x-for="i in 5" :key="i"><tr class="border-b border-slate-50 dark:border-slate-800/60"><td class="px-4 py-3" colspan="6"><div class="skeleton h-8 rounded-lg"></div></td></tr></template>
+            </template>
+            <template x-if="!loadingTable">
+              <template x-for="s in paginatedSantri()" :key="s.id">
+                <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center gap-3">
+                      <img :src="s.foto || placeholderAvatar(s.jenis_kelamin)" class="w-9 h-9 rounded-full object-cover bg-slate-100 shrink-0">
+                      <div class="min-w-0">
+                        <p class="font-semibold text-slate-700 dark:text-slate-200 truncate" x-text="s.nama_lengkap"></p>
+                        <p class="text-[11px] text-slate-400 truncate" x-text="s.tempat_lahir + ', ' + fmtDate(s.tanggal_lahir)"></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2.5 font-mono-num text-xs text-slate-500 dark:text-slate-400">
+                    <p x-text="s.nis"></p><p class="text-slate-400" x-text="s.nisn"></p>
+                  </td>
+                  <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="s.jenjang_pondok"></td>
+                  <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="s.angkatan"></td>
+                  <td class="px-4 py-2.5">
+                    <span class="badge-dot text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="s.status==='Aktif' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'" x-text="s.status"></span>
+                  </td>
+                  <td class="px-4 py-2.5 no-print">
+                    <div class="flex items-center justify-end gap-1">
+                      <button @click="viewSantri(s)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+                      <button @click="openSantriWizard(s)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                      <button @click="confirmDelete('santri', s.id, s.nama_lengkap)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </template>
+            <tr x-show="!loadingTable && filteredSantri().length===0"><td colspan="6" class="text-center py-14 text-slate-400 text-sm">Tidak ada data santri yang cocok.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800 no-print" x-show="filteredSantri().length>0">
+        <p class="text-xs text-slate-400">Menampilkan <span x-text="pageInfo(filteredSantri()).from"></span>–<span x-text="pageInfo(filteredSantri()).to"></span> dari <span x-text="filteredSantri().length"></span></p>
+        <div class="flex items-center gap-1">
+          <button @click="santriPage=Math.max(1,santriPage-1)" class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-600 disabled:opacity-40" :disabled="santriPage===1"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
+          <span class="text-xs font-semibold px-2 text-slate-500" x-text="santriPage + ' / ' + pageInfo(filteredSantri()).pages"></span>
+          <button @click="santriPage=Math.min(pageInfo(filteredSantri()).pages,santriPage+1)" class="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-600 disabled:opacity-40" :disabled="santriPage>=pageInfo(filteredSantri()).pages"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= DATA PENGURUS ============================= -->
+<template x-if="currentPage==='pengurus' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white" x-text="'Data Pengurus ' + (currentParams.gender==='L' ? 'Putra' : 'Putri')"></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="filteredList(pengurus,'nama').length"></span> pengurus terdaftar</p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" x-model="listSearch" placeholder="Cari pengurus..." class="pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm w-48">
+        </div>
+        <button @click="openSimpleForm('pengurus')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft shrink-0"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah</button>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th><th class="px-4 py-3 font-semibold">No. HP</th><th class="px-4 py-3 font-semibold">Periode</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="p in filteredList(pengurus,'nama')" :key="p.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-4 py-2.5"><div class="flex items-center gap-3"><img :src="p.foto || placeholderAvatar(p.jenis_kelamin)" class="w-9 h-9 rounded-full object-cover bg-slate-100"><div><p class="font-semibold text-slate-700 dark:text-slate-200" x-text="p.nama"></p><p class="text-[11px] text-slate-400 truncate max-w-[180px]" x-text="p.alamat"></p></div></div></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.jabatan"></td>
+                <td class="px-4 py-2.5 font-mono-num text-xs text-slate-500 dark:text-slate-400" x-text="p.no_hp"></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.periode"></td>
+                <td class="px-4 py-2.5"><span class="badge-dot text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="p.status==='Aktif' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'" x-text="p.status"></span></td>
+                <td class="px-4 py-2.5 no-print"><div class="flex items-center justify-end gap-1">
+                  <button @click="openSimpleForm('pengurus',p)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button @click="confirmDelete('pengurus', p.id, p.nama)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div></td>
+              </tr>
+            </template>
+            <tr x-show="filteredList(pengurus,'nama').length===0"><td colspan="6" class="text-center py-14 text-slate-400 text-sm">Belum ada data pengurus.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= DATA GURU ============================= -->
+<template x-if="currentPage==='guru' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white" x-text="'Guru ' + currentParams.jenis + ' - ' + (currentParams.gender==='L' ? 'Putra' : 'Putri')"></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="guruList().length"></span> guru/ustadz</p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" x-model="listSearch" placeholder="Cari guru..." class="pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm w-48">
+        </div>
+        <button @click="openSimpleForm('guru')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft shrink-0"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <template x-for="g in guruList()" :key="g.id">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 flex items-center gap-3.5 hover:shadow-card transition">
+          <img :src="g.foto || placeholderAvatar(g.jenis_kelamin)" class="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0">
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate" x-text="g.nama"></p>
+            <p class="text-[11px] text-slate-400 truncate" x-text="g.jenis_guru"></p>
+            <p class="text-[11px] text-slate-400 font-mono-num mt-0.5" x-text="g.no_hp"></p>
+          </div>
+          <div class="flex flex-col gap-1 no-print">
+            <button @click="openSimpleForm('guru',g)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button @click="confirmDelete('guru', g.id, g.nama)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      </template>
+      <div x-show="guruList().length===0" class="col-span-full text-center py-14 text-slate-400 text-sm">Belum ada data guru pada kategori ini.</div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= DATA ALUMNI ============================= -->
+<template x-if="currentPage==='alumni' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white" x-text="'Data Alumni ' + (currentParams.gender==='L' ? 'Putra' : 'Putri')"></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="filteredList(alumniOf(),'nama').length"></span> alumni</p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <button @click="exportCSV(filteredList(alumniOf(),'nama'),'alumni')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel</button>
+        <button @click="exportPDF('Data Alumni')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
+        <button @click="openSimpleForm('alumni')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft shrink-0"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah</button>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Masuk–Lulus</th><th class="px-4 py-3 font-semibold">Pekerjaan</th><th class="px-4 py-3 font-semibold">No. HP</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="a in filteredList(alumniOf(),'nama')" :key="a.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-4 py-2.5"><div class="flex items-center gap-3"><img :src="a.foto || placeholderAvatar(a.jenis_kelamin)" class="w-9 h-9 rounded-full object-cover bg-slate-100"><p class="font-semibold text-slate-700 dark:text-slate-200" x-text="a.nama"></p></div></td>
+                <td class="px-4 py-2.5 font-mono-num text-xs text-slate-500 dark:text-slate-400" x-text="a.tahun_masuk + ' – ' + a.tahun_lulus"></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="a.pekerjaan"></td>
+                <td class="px-4 py-2.5 font-mono-num text-xs text-slate-500 dark:text-slate-400" x-text="a.no_hp"></td>
+                <td class="px-4 py-2.5"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30" x-text="a.status"></span></td>
+                <td class="px-4 py-2.5 no-print"><div class="flex items-center justify-end gap-1">
+                  <button @click="openSimpleForm('alumni',a)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button @click="confirmDelete('alumni', a.id, a.nama)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div></td>
+              </tr>
+            </template>
+            <tr x-show="filteredList(alumniOf(),'nama').length===0"><td colspan="6" class="text-center py-14 text-slate-400 text-sm">Belum ada data alumni.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= BENDAHARA (PEMBAYARAN) ============================= -->
+<template x-if="currentPage==='bendahara' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white" x-text="'Pembayaran ' + currentParams.jenis"></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Total terkumpul: <span class="font-semibold text-emerald-600" x-text="fmtRupiah(bendaharaList().reduce((s,p)=>s+Number(p.nominal||0),0))"></span></p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <button @click="exportCSV(bendaharaList(),'pembayaran')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel</button>
+        <button @click="exportPDF('Laporan Pembayaran')" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
+        <button @click="openSimpleForm('pembayaran')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft shrink-0"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Catat Pembayaran</button>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Santri</th><th class="px-4 py-3 font-semibold">Nominal</th><th class="px-4 py-3 font-semibold">Tanggal</th><th class="px-4 py-3 font-semibold">Metode</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="p in bendaharaList()" :key="p.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-200" x-text="p.nama_santri"></td>
+                <td class="px-4 py-2.5 font-mono-num text-slate-700 dark:text-slate-200" x-text="fmtRupiah(p.nominal)"></td>
+                <td class="px-4 py-2.5 text-slate-500 dark:text-slate-400" x-text="fmtDate(p.tanggal)"></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.metode"></td>
+                <td class="px-4 py-2.5"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="p.status==='Lunas' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/30'" x-text="p.status"></span></td>
+                <td class="px-4 py-2.5 no-print"><div class="flex items-center justify-end gap-1">
+                  <button @click="printReceipt(p)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="receipt" class="w-3.5 h-3.5"></i></button>
+                  <button @click="openSimpleForm('pembayaran',p)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button @click="confirmDelete('pembayaran', p.id, p.nama_santri)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div></td>
+              </tr>
+            </template>
+            <tr x-show="bendaharaList().length===0"><td colspan="6" class="text-center py-14 text-slate-400 text-sm">Belum ada transaksi pembayaran.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= KEAMANAN: PERIZINAN ============================= -->
+<template x-if="currentPage==='perizinan' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Perizinan Santri</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="perizinan.filter(p=>p.status==='Keluar').length"></span> santri sedang izin keluar</p>
+      </div>
+      <button @click="openSimpleForm('perizinan')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft no-print"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Buat Izin Baru</button>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Santri</th><th class="px-4 py-3 font-semibold">Keluar</th><th class="px-4 py-3 font-semibold">Rencana Kembali</th><th class="px-4 py-3 font-semibold">Tujuan</th><th class="px-4 py-3 font-semibold">Penanggung Jawab</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="p in perizinan" :key="p.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-200" x-text="p.nama_santri"></td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400" x-text="fmtDate(p.tgl_keluar) + ' · ' + p.jam_keluar"></td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400" x-text="fmtDate(p.tgl_kembali) + ' · ' + p.jam_kembali"></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.tujuan"></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.penanggung_jawab"></td>
+                <td class="px-4 py-2.5">
+                  <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="p.status==='Keluar' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30'" x-text="p.status"></span>
+                </td>
+                <td class="px-4 py-2.5 no-print"><div class="flex items-center justify-end gap-1">
+                  <button x-show="p.status==='Keluar'" @click="tandaiKembali(p)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 hover:bg-emerald-100">Tandai Kembali</button>
+                  <button @click="openSimpleForm('perizinan',p)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button @click="confirmDelete('perizinan', p.id, p.nama_santri)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div></td>
+              </tr>
+            </template>
+            <tr x-show="perizinan.length===0"><td colspan="7" class="text-center py-14 text-slate-400 text-sm">Belum ada data perizinan.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= KEAMANAN: PELANGGARAN ============================= -->
+<template x-if="currentPage==='pelanggaran' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Pelanggaran Santri</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span x-text="pelanggaran.length"></span> catatan pelanggaran</p>
+      </div>
+      <button @click="openSimpleForm('pelanggaran')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft no-print"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Catat Pelanggaran</button>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Santri</th><th class="px-4 py-3 font-semibold">Tanggal</th><th class="px-4 py-3 font-semibold">Jenis Pelanggaran</th><th class="px-4 py-3 font-semibold">Sanksi</th><th class="px-4 py-3 font-semibold text-right no-print">Aksi</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="p in pelanggaran" :key="p.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                <td class="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-200" x-text="p.nama_santri"></td>
+                <td class="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400" x-text="fmtDate(p.tanggal)"></td>
+                <td class="px-4 py-2.5"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500 dark:bg-red-900/30" x-text="p.jenis_pelanggaran"></span></td>
+                <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="p.sanksi"></td>
+                <td class="px-4 py-2.5 no-print"><div class="flex items-center justify-end gap-1">
+                  <button @click="openSimpleForm('pelanggaran',p)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button @click="confirmDelete('pelanggaran', p.id, p.nama_santri)" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div></td>
+              </tr>
+            </template>
+            <tr x-show="pelanggaran.length===0"><td colspan="5" class="text-center py-14 text-slate-400 text-sm">Belum ada catatan pelanggaran.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= KEAMANAN: RIWAYAT KELUAR MASUK ============================= -->
+<template x-if="currentPage==='riwayat' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div>
+      <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Riwayat Keluar Masuk Santri</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Log otomatis sistem, tercatat secara real-time dari modul Perizinan</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <th class="px-4 py-3 font-semibold">Santri</th><th class="px-4 py-3 font-semibold">Tipe</th><th class="px-4 py-3 font-semibold">Waktu</th><th class="px-4 py-3 font-semibold">Keterangan</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="l in riwayatLog.slice().reverse()" :key="l.id">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60">
+                <td class="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-200" x-text="l.nama_santri"></td>
+                <td class="px-4 py-2.5">
+                  <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full" :class="l.tipe==='Keluar' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30'">
+                    <i :data-lucide="l.tipe==='Keluar' ? 'log-out' : 'log-in'" class="w-3 h-3"></i><span x-text="l.tipe"></span>
+                  </span>
+                </td>
+                <td class="px-4 py-2.5 font-mono-num text-xs text-slate-500 dark:text-slate-400" x-text="l.waktu"></td>
+                <td class="px-4 py-2.5 text-slate-500 dark:text-slate-400" x-text="l.keterangan"></td>
+              </tr>
+            </template>
+            <tr x-show="riwayatLog.length===0"><td colspan="4" class="text-center py-14 text-slate-400 text-sm">Belum ada aktivitas keluar-masuk.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= LAPORAN ============================= -->
+<template x-if="currentPage==='laporan' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4">
+    <div>
+      <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Laporan Komprehensif</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Pilih jenis data dan terapkan filter untuk membuat laporan</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 no-print">
+      <div class="flex flex-wrap gap-1.5">
+        <template x-for="j in [['santri','Data Santri'],['guru','Data Guru'],['pengurus','Data Pengurus'],['alumni','Data Alumni'],['pembayaran','Pembayaran'],['perizinan','Perizinan']]" :key="j[0]">
+          <button @click="laporanFilter.jenis=j[0]" class="text-xs font-semibold px-3 py-2 rounded-xl border transition"
+                  :class="laporanFilter.jenis===j[0] ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-emerald-300'"
+                  x-text="j[1]"></button>
+        </template>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div>
+          <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Dari Tanggal</label>
+          <input type="date" x-model="laporanFilter.dari" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+        </div>
+        <div>
+          <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Sampai Tanggal</label>
+          <input type="date" x-model="laporanFilter.sampai" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+        </div>
+        <div>
+          <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Jenis Kelamin</label>
+          <select x-model="laporanFilter.gender" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+            <option value="">Semua</option><option value="L">Putra</option><option value="P">Putri</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 block">Jenjang</label>
+          <select x-model="laporanFilter.jenjang" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+            <option value="">Semua</option><option>MI</option><option>MTS</option><option>MA</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button @click="exportCSV(laporanData(),'laporan_'+laporanFilter.jenis)" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export Excel</button>
+        <button @click="exportPDF('Laporan')" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak PDF</button>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-slate-100 dark:border-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400">
+            <template x-for="col in laporanColumns()" :key="col.key"><th class="px-4 py-3 font-semibold" x-text="col.label"></th></template>
+          </tr></thead>
+          <tbody>
+            <template x-for="(row,ri) in laporanData()" :key="ri">
+              <tr class="border-b border-slate-50 dark:border-slate-800/60">
+                <template x-for="col in laporanColumns()" :key="col.key"><td class="px-4 py-2.5 text-slate-600 dark:text-slate-300" x-text="row[col.key]"></td></template>
+              </tr>
+            </template>
+            <tr x-show="laporanData().length===0"><td :colspan="laporanColumns().length" class="text-center py-14 text-slate-400 text-sm">Tidak ada data untuk filter yang dipilih.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="px-4 py-3 text-xs text-slate-400 border-t border-slate-100 dark:border-slate-800"><span x-text="laporanData().length"></span> baris ditemukan</p>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= PENGATURAN ============================= -->
+<template x-if="currentPage==='pengaturan' && canAccessCurrentPage()">
+  <div class="animate-fade-in space-y-4 max-w-2xl">
+    <div>
+      <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Pengaturan Sistem</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Khusus Super Admin</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4 text-emerald-600"></i> Tampilan</h3>
+      <div class="flex items-center justify-between">
+        <div><p class="text-sm font-medium text-slate-700 dark:text-slate-200">Mode Gelap</p><p class="text-xs text-slate-400">Ubah tema aplikasi menjadi gelap atau terang</p></div>
+        <button @click="darkMode=!darkMode" class="w-12 h-7 rounded-full p-1 transition" :class="darkMode ? 'bg-emerald-600' : 'bg-slate-200'">
+          <div class="w-5 h-5 bg-white rounded-full shadow transition-transform" :class="darkMode && 'translate-x-5'"></div>
+        </button>
+      </div>
+      <div class="flex items-center justify-between">
+        <div><p class="text-sm font-medium text-slate-700 dark:text-slate-200">Sidebar Diperluas Otomatis</p><p class="text-xs text-slate-400">Tampilkan label menu penuh saat memuat halaman</p></div>
+        <button @click="sidebarOpen=!sidebarOpen" class="w-12 h-7 rounded-full p-1 transition" :class="sidebarOpen ? 'bg-emerald-600' : 'bg-slate-200'">
+          <div class="w-5 h-5 bg-white rounded-full shadow transition-transform" :class="sidebarOpen && 'translate-x-5'"></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-emerald-600"></i> Manajemen User</h3>
+      <div class="space-y-2">
+        <template x-for="u in users" :key="u.id">
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center" x-text="u.name.charAt(0)"></div>
+              <div><p class="text-xs font-semibold text-slate-700 dark:text-slate-200" x-text="u.name"></p><p class="text-[11px] text-slate-400" x-text="u.username"></p></div>
+            </div>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30" x-text="roleLabel(u.role)"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="database-backup" class="w-4 h-4 text-emerald-600"></i> Backup &amp; Restore Database</h3>
+      <p class="text-xs text-slate-400">Unduh seluruh data sistem sebagai berkas cadangan, atau pulihkan dari berkas cadangan sebelumnya.</p>
+      <div class="flex flex-wrap gap-2">
+        <button @click="backupData()" class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"><i data-lucide="download" class="w-3.5 h-3.5"></i> Backup Sekarang</button>
+        <label class="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> Restore dari Berkas
+          <input type="file" accept=".json" class="hidden" @change="restoreData($event)">
+        </label>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-3"><i data-lucide="history" class="w-4 h-4 text-emerald-600"></i> Audit Log &amp; Aktivitas Pengguna</h3>
+      <div class="space-y-2.5 max-h-56 overflow-y-auto">
+        <template x-for="a in activityLog" :key="'audit'+a.id">
+          <div class="flex items-center justify-between text-xs border-b border-slate-50 dark:border-slate-800/60 pb-2">
+            <span class="text-slate-600 dark:text-slate-300"><span class="font-semibold" x-text="a.user"></span> <span x-text="a.aksi"></span></span>
+            <span class="text-slate-400 font-mono-num shrink-0 ml-2" x-text="a.waktu"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ============================= PROFIL PENGGUNA ============================= -->
+<template x-if="currentPage==='profil'">
+  <div class="animate-fade-in max-w-xl space-y-4">
+    <div>
+      <h1 class="font-display text-xl font-bold text-slate-800 dark:text-white">Profil Pengguna</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola informasi akun dan kata sandi Anda</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl font-bold" x-text="auth.user.name.charAt(0)"></div>
+      <div>
+        <p class="font-display font-bold text-slate-800 dark:text-white" x-text="auth.user.name"></p>
+        <p class="text-xs text-slate-400 mt-0.5" x-text="auth.user.username"></p>
+        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 mt-1.5 inline-block" x-text="roleLabel(auth.user.role)"></span>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3.5">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white">Informasi Akun</h3>
+      <div>
+        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama Lengkap</label>
+        <input type="text" x-model="auth.user.name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Username</label>
+        <input type="text" x-model="auth.user.username" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+      </div>
+      <button @click="saveProfile()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Simpan Perubahan</button>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3.5">
+      <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white">Ganti Password</h3>
+      <input type="password" x-model="pwForm.old" placeholder="Password saat ini" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+      <input type="password" x-model="pwForm.baru" placeholder="Password baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+      <input type="password" x-model="pwForm.konfirmasi" placeholder="Konfirmasi password baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+      <button @click="changePassword()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Perbarui Password</button>
+    </div>
+  </div>
+</template>
+
+
+    </main>
+    <footer class="text-center text-[11px] text-slate-400 dark:text-slate-600 py-6 no-print">
+      PesantrenPro &copy; <span x-text="new Date().getFullYear()"></span> — Sistem Manajemen Pondok Pesantren Alhidayah Induk
+    </footer>
+  </div>
+</div>
+</template>
+<!-- END MAIN APP SHELL -->
+
+<!-- ============================= SANTRI WIZARD MODAL ============================= -->
+<div x-show="santriWizardOpen" x-cloak class="fixed inset-0 z-[95] flex items-center justify-center p-0 sm:p-4 no-print" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="closeSantriWizard()"></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl shadow-pop w-full max-w-3xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col animate-scale-in overflow-hidden">
+    <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+      <div>
+        <h3 class="font-display font-bold text-base sm:text-lg text-slate-800 dark:text-white" x-text="santriForm.id ? 'Edit Data Santri' : 'Tambah Santri Baru'"></h3>
+        <p class="text-xs text-slate-400 mt-0.5" x-text="'Langkah ' + wizardStep + ' dari 5 — ' + wizardStepLabel()"></p>
+      </div>
+      <button @click="closeSantriWizard()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <!-- stepper -->
+    <div class="px-5 sm:px-6 pt-4 shrink-0">
+      <div class="flex items-center">
+        <template x-for="n in [1,2,3,4,5]" :key="n">
+          <div class="flex items-center flex-1 last:flex-none">
+            <button @click="wizardStep=n" class="w-7 h-7 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 transition"
+                    :class="wizardStep>=n ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'" x-text="n"></button>
+            <div x-show="n<5" class="flex-1 h-0.5 mx-1.5 rounded-full" :class="wizardStep>n ? 'bg-emerald-600' : 'bg-slate-100 dark:bg-slate-800'"></div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5">
+      <!-- STEP 1: akademik & pondok -->
+      <div x-show="wizardStep===1" class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Foto Santri</label>
+          <div class="flex items-center gap-4">
+            <img :src="santriForm.foto || placeholderAvatar(santriForm.jenis_kelamin)" class="w-20 h-20 rounded-2xl object-cover bg-slate-100 border border-slate-200 dark:border-slate-700">
+            <div class="flex gap-2">
+              <label class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+                Unggah &amp; Crop
+                <input type="file" accept="image/*" class="hidden" @change="openCropper($event,'foto')">
+              </label>
+              <button type="button" x-show="santriForm.foto" @click="santriForm.foto=''" class="text-xs font-semibold px-3 py-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">Hapus</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Pondok</label>
+          <select x-model="santriForm.jenis_kelamin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <option value="L">Pondok Putra</option>
+            <option value="P">Pondok Putri</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenjang Pondok</label>
+          <select x-model="santriForm.jenjang_pondok" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <option>MI</option><option>MTS</option><option>MA</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">NIS (Nomor Induk Santri)</label>
+          <input type="text" x-model="santriForm.nis" readonly class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-sm text-slate-500" placeholder="Otomatis oleh sistem">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">NISN</label>
+          <input type="text" x-model="santriForm.nisn" maxlength="10" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" placeholder="10 digit NISN">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Angkatan (Tahun Masuk)</label>
+          <input type="number" x-model="santriForm.angkatan" min="2000" max="2100" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Status</label>
+          <select x-model="santriForm.status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <option>Aktif</option><option>Nonaktif</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- STEP 2: data pribadi -->
+      <div x-show="wizardStep===2" class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">NIK (Nomor Induk Kependudukan)</label>
+          <input type="text" x-model="santriForm.nik" maxlength="16" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" placeholder="16 digit NIK">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama Lengkap</label>
+          <input type="text" x-model="santriForm.nama_lengkap" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" placeholder="Nama lengkap santri">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tempat Lahir</label>
+          <input type="text" x-model="santriForm.tempat_lahir" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tanggal Lahir</label>
+          <input type="date" x-model="santriForm.tanggal_lahir" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+      </div>
+
+      <!-- STEP 3: pendidikan asal -->
+      <div x-show="wizardStep===3" class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Sekolah Asal</label>
+          <input type="text" x-model="santriForm.sekolah_asal" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenjang Sekolah Asal</label>
+          <select x-model="santriForm.jenjang_sekolah_asal" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <option>SD/MI</option><option>SMP/MTS</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2 pt-2">
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Alamat &amp; Domisili</p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Alamat (Jalan, RT/RW)</label>
+          <textarea x-model="santriForm.alamat" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Provinsi</label>
+          <input type="text" x-model="santriForm.provinsi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Kabupaten/Kota</label>
+          <input type="text" x-model="santriForm.kabupaten" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Kecamatan</label>
+          <input type="text" x-model="santriForm.kecamatan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Kode Pos</label>
+          <input type="text" x-model="santriForm.kode_pos" maxlength="5" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+        </div>
+      </div>
+
+      <!-- STEP 4: orang tua -->
+      <div x-show="wizardStep===4" class="space-y-5 animate-fade-in">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Data Ayah</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input type="text" x-model="santriForm.nama_ayah" placeholder="Nama Ayah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <input type="text" x-model="santriForm.nik_ayah" maxlength="16" placeholder="NIK Ayah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <select x-model="santriForm.status_ayah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+              <option>Masih Hidup</option><option>Sudah Meninggal</option>
+            </select>
+            <input type="text" x-model="santriForm.pekerjaan_ayah" placeholder="Pekerjaan Ayah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <input type="text" x-model="santriForm.penghasilan_ayah" placeholder="Penghasilan Ayah (per bulan)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Data Ibu</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input type="text" x-model="santriForm.nama_ibu" placeholder="Nama Ibu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <input type="text" x-model="santriForm.nik_ibu" maxlength="16" placeholder="NIK Ibu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <select x-model="santriForm.status_ibu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+              <option>Masih Hidup</option><option>Sudah Meninggal</option>
+            </select>
+            <input type="text" x-model="santriForm.pekerjaan_ibu" placeholder="Pekerjaan Ibu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <input type="text" x-model="santriForm.penghasilan_ibu" placeholder="Penghasilan Ibu (per bulan)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: kontak & dokumen -->
+      <div x-show="wizardStep===5" class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Telepon Orang Tua/Wali</label>
+          <input type="tel" x-model="santriForm.telepon_ortu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" placeholder="08xxxxxxxxxx">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Status Rumah</label>
+          <select x-model="santriForm.status_rumah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+            <option>Milik Sendiri</option><option>Sewa/Kontrak</option><option>Ikut Keluarga</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Scan Kartu Keluarga (KK)</label>
+          <div class="flex items-center gap-4">
+            <img :src="santriForm.foto_kk || placeholderDoc()" class="w-24 h-16 rounded-lg object-cover bg-slate-100 border border-slate-200 dark:border-slate-700">
+            <label class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+              Unggah &amp; Crop
+              <input type="file" accept="image/*" class="hidden" @change="openCropper($event,'foto_kk')">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+      <button @click="wizardStep=Math.max(1,wizardStep-1)" x-show="wizardStep>1" class="text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 flex items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Sebelumnya</button>
+      <div class="ml-auto flex gap-2">
+        <button @click="closeSantriWizard()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Batal</button>
+        <button x-show="wizardStep<5" @click="wizardStep=Math.min(5,wizardStep+1)" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-1.5">Lanjut <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+        <button x-show="wizardStep===5" @click="saveSantri()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i> Simpan Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= IMAGE CROPPER MODAL ============================= -->
+<div x-show="cropperOpen" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4 no-print" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" @click="cropperOpen=false"></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-pop w-full max-w-sm p-5 animate-scale-in">
+    <h3 class="font-display font-bold text-sm text-slate-800 dark:text-white mb-3">Sesuaikan &amp; Potong Gambar</h3>
+    <div class="rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
+      <canvas id="cropCanvas" width="300" height="300" class="crop-canvas"
+              @mousedown="cropDrag($event,'start')" @mousemove="cropDrag($event,'move')" @mouseup="cropDrag($event,'end')" @mouseleave="cropDrag($event,'end')"
+              @touchstart="cropDrag($event,'start')" @touchmove="cropDrag($event,'move')" @touchend="cropDrag($event,'end')"></canvas>
+    </div>
+    <div class="flex items-center gap-3 mt-4">
+      <i data-lucide="zoom-out" class="w-4 h-4 text-slate-400"></i>
+      <input type="range" min="1" max="3" step="0.05" x-model.number="cropZoom" @input="drawCrop()" class="flex-1 accent-emerald-600">
+      <i data-lucide="zoom-in" class="w-4 h-4 text-slate-400"></i>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button @click="cropperOpen=false" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300">Batal</button>
+      <button @click="applyCrop()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Gunakan Foto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SANTRI DETAIL DRAWER ============================= -->
+<div x-show="santriDetailOpen" x-cloak class="fixed inset-0 z-[92]" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 no-print" @click="santriDetailOpen=false"></div>
+  <div class="absolute right-0 top-0 h-full w-full sm:w-[440px] print:w-full print:static bg-white dark:bg-slate-900 shadow-pop print:shadow-none overflow-y-auto animate-slide-in-right" x-show="santriDetailOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0">
+    <template x-if="santriDetail">
+      <div>
+        <div class="h-32 bg-gradient-to-br from-emerald-600 to-emerald-800 relative">
+          <button @click="santriDetailOpen=false" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="px-6 pb-6">
+          <img :src="santriDetail.foto || placeholderAvatar(santriDetail.jenis_kelamin)" class="w-20 h-20 rounded-2xl object-cover border-4 border-white dark:border-slate-900 -mt-10 bg-slate-100">
+          <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white mt-3" x-text="santriDetail.nama_lengkap"></h3>
+          <p class="text-xs text-slate-400" x-text="'NIS ' + santriDetail.nis + ' · NISN ' + santriDetail.nisn"></p>
+          <div class="flex gap-2 mt-3">
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30" x-text="santriDetail.jenjang_pondok"></span>
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800" x-text="santriDetail.status"></span>
+          </div>
+
+          <div class="mt-6 space-y-5 text-sm">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Data Pribadi</p>
+              <div class="grid grid-cols-2 gap-y-2 text-xs">
+                <p class="text-slate-400">NIK</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.nik"></p>
+                <p class="text-slate-400">Tempat, Tgl Lahir</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.tempat_lahir + ', ' + fmtDate(santriDetail.tanggal_lahir)"></p>
+                <p class="text-slate-400">Jenis Kelamin</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.jenis_kelamin==='L'?'Laki-laki':'Perempuan'"></p>
+                <p class="text-slate-400">Angkatan</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.angkatan"></p>
+              </div>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Pendidikan Asal</p>
+              <div class="grid grid-cols-2 gap-y-2 text-xs">
+                <p class="text-slate-400">Sekolah Asal</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.sekolah_asal"></p>
+                <p class="text-slate-400">Jenjang</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.jenjang_sekolah_asal"></p>
+              </div>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Alamat</p>
+              <p class="text-xs text-slate-700 dark:text-slate-200" x-text="santriDetail.alamat + ', ' + santriDetail.kecamatan + ', ' + santriDetail.kabupaten + ', ' + santriDetail.provinsi + ' ' + santriDetail.kode_pos"></p>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Orang Tua / Wali</p>
+              <div class="grid grid-cols-2 gap-y-2 text-xs">
+                <p class="text-slate-400">Ayah</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.nama_ayah + ' (' + santriDetail.pekerjaan_ayah + ')'"></p>
+                <p class="text-slate-400">Ibu</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.nama_ibu + ' (' + santriDetail.pekerjaan_ibu + ')'"></p>
+                <p class="text-slate-400">Telepon</p><p class="text-slate-700 dark:text-slate-200 font-medium" x-text="santriDetail.telepon_ortu"></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-6 no-print">
+            <button @click="openSantriWizard(santriDetail); santriDetailOpen=false" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit</button>
+            <button @click="window.print()" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- ============================= GENERIC CONFIRM DELETE MODAL ============================= -->
+<div x-show="confirmModal.open" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center p-4 no-print" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="confirmModal.open=false"></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-pop w-full max-w-sm p-6 animate-scale-in">
+    <div class="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-4">
+      <i data-lucide="trash-2" class="w-5 h-5 text-red-500"></i>
+    </div>
+    <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Hapus Data?</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Apakah Anda yakin ingin menghapus <span class="font-semibold text-slate-700 dark:text-slate-200" x-text="confirmModal.name"></span>? Tindakan ini tidak dapat dibatalkan.</p>
+    <div class="flex gap-2 mt-5">
+      <button @click="confirmModal.open=false" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Batal</button>
+      <button @click="doDelete()" class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold">Hapus</button>
+    </div>
+  </div>
+</div>
+<!-- ============================= GENERIC SIMPLE FORM MODAL ============================= -->
+<div x-show="simpleFormOpen" x-cloak class="fixed inset-0 z-[95] flex items-center justify-center p-4 no-print" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="simpleFormOpen=false"></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-pop w-full max-w-lg max-h-[90vh] flex flex-col animate-scale-in overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+      <h3 class="font-display font-bold text-base text-slate-800 dark:text-white" x-text="(simpleForm.id ? 'Edit ' : 'Tambah ') + simpleFormTitle()"></h3>
+      <button @click="simpleFormOpen=false" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+      <!-- PENGURUS -->
+      <template x-if="simpleFormType==='pengurus'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2 flex items-center gap-4">
+            <img :src="simpleForm.foto || placeholderAvatar(simpleForm.jenis_kelamin)" class="w-16 h-16 rounded-xl object-cover bg-slate-100">
+            <label class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">Unggah Foto<input type="file" accept="image/*" class="hidden" @change="openCropper($event,'foto',true)"></label>
+          </div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama</label><input type="text" x-model="simpleForm.nama" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jabatan</label><input type="text" x-model="simpleForm.jabatan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Kelamin</label><select x-model="simpleForm.jenis_kelamin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option value="L">Putra</option><option value="P">Putri</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nomor HP</label><input type="tel" x-model="simpleForm.no_hp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Periode</label><input type="text" x-model="simpleForm.periode" placeholder="2024-2026" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Alamat</label><textarea x-model="simpleForm.alamat" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Status</label><select x-model="simpleForm.status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Aktif</option><option>Nonaktif</option></select></div>
+        </div>
+      </template>
+
+      <!-- GURU -->
+      <template x-if="simpleFormType==='guru'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2 flex items-center gap-4">
+            <img :src="simpleForm.foto || placeholderAvatar(simpleForm.jenis_kelamin)" class="w-16 h-16 rounded-xl object-cover bg-slate-100">
+            <label class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">Unggah Foto<input type="file" accept="image/*" class="hidden" @change="openCropper($event,'foto',true)"></label>
+          </div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama</label><input type="text" x-model="simpleForm.nama" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Guru</label><select x-model="simpleForm.jenis_guru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Madrasah Qur'an</option><option>Madrasah Diniyah</option><option>Amtsilati</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Kelamin</label><select x-model="simpleForm.jenis_kelamin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option value="L">Putra</option><option value="P">Putri</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nomor HP</label><input type="tel" x-model="simpleForm.no_hp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Status</label><select x-model="simpleForm.status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Aktif</option><option>Nonaktif</option></select></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Alamat</label><textarea x-model="simpleForm.alamat" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea></div>
+        </div>
+      </template>
+
+      <!-- ALUMNI -->
+      <template x-if="simpleFormType==='alumni'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2 flex items-center gap-4">
+            <img :src="simpleForm.foto || placeholderAvatar(simpleForm.jenis_kelamin)" class="w-16 h-16 rounded-xl object-cover bg-slate-100">
+            <label class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">Unggah Foto<input type="file" accept="image/*" class="hidden" @change="openCropper($event,'foto',true)"></label>
+          </div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama</label><input type="text" x-model="simpleForm.nama" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tahun Masuk</label><input type="number" x-model="simpleForm.tahun_masuk" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tahun Lulus</label><input type="number" x-model="simpleForm.tahun_lulus" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Kelamin</label><select x-model="simpleForm.jenis_kelamin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option value="L">Putra</option><option value="P">Putri</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Pekerjaan</label><input type="text" x-model="simpleForm.pekerjaan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nomor HP</label><input type="tel" x-model="simpleForm.no_hp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Alamat</label><textarea x-model="simpleForm.alamat" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Catatan</label><textarea x-model="simpleForm.catatan" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea></div>
+        </div>
+      </template>
+
+      <!-- PEMBAYARAN -->
+      <template x-if="simpleFormType==='pembayaran'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama Santri</label>
+            <select x-model="simpleForm.santri_id" @change="onSelectSantriPay()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+              <option value="">Pilih santri...</option>
+              <template x-for="s in santri" :key="s.id"><option :value="s.id" x-text="s.nama_lengkap + ' (' + s.nis + ')'"></option></template>
+            </select>
+          </div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Pembayaran</label><select x-model="simpleForm.jenis" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Syahriah</option><option>Uang Makan</option><option>Tabungan</option><option>Lainnya</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nominal (Rp)</label><input type="number" x-model="simpleForm.nominal" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tanggal Pembayaran</label><input type="date" x-model="simpleForm.tanggal" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Metode Pembayaran</label><select x-model="simpleForm.metode" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Tunai</option><option>Transfer Bank</option><option>QRIS</option></select></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Status</label><select x-model="simpleForm.status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Lunas</option><option>Pending</option></select></div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Bukti Pembayaran</label>
+            <label class="flex items-center gap-2 text-xs font-semibold px-3 py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 w-fit">
+              <i data-lucide="paperclip" class="w-3.5 h-3.5"></i><span x-text="simpleForm.bukti ? 'Berkas terlampir ✓' : 'Lampirkan berkas'"></span>
+              <input type="file" accept="image/*,.pdf" class="hidden" @change="attachFile($event,'bukti')">
+            </label>
+          </div>
+        </div>
+      </template>
+
+      <!-- PERIZINAN -->
+      <template x-if="simpleFormType==='perizinan'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama Santri</label>
+            <select x-model="simpleForm.santri_id" @change="onSelectSantriIzin()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+              <option value="">Pilih santri...</option>
+              <template x-for="s in santri" :key="s.id"><option :value="s.id" x-text="s.nama_lengkap + ' (' + s.nis + ')'"></option></template>
+            </select>
+          </div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tanggal Keluar</label><input type="date" x-model="simpleForm.tgl_keluar" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jam Keluar</label><input type="time" x-model="simpleForm.jam_keluar" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Rencana Tgl Kembali</label><input type="date" x-model="simpleForm.tgl_kembali" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jam Kembali</label><input type="time" x-model="simpleForm.jam_kembali" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tujuan</label><input type="text" x-model="simpleForm.tujuan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Penanggung Jawab</label><input type="text" x-model="simpleForm.penanggung_jawab" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Surat Izin</label>
+            <label class="flex items-center gap-2 text-xs font-semibold px-3 py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 w-fit">
+              <i data-lucide="paperclip" class="w-3.5 h-3.5"></i><span x-text="simpleForm.surat_izin ? 'Berkas terlampir ✓' : 'Lampirkan berkas'"></span>
+              <input type="file" accept="image/*,.pdf" class="hidden" @change="attachFile($event,'surat_izin')">
+            </label>
+          </div>
+        </div>
+      </template>
+
+      <!-- PELANGGARAN -->
+      <template x-if="simpleFormType==='pelanggaran'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Nama Santri</label>
+            <select x-model="simpleForm.santri_id" @change="onSelectSantriLanggar()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+              <option value="">Pilih santri...</option>
+              <template x-for="s in santri" :key="s.id"><option :value="s.id" x-text="s.nama_lengkap + ' (' + s.nis + ')'"></option></template>
+            </select>
+          </div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Tanggal</label><input type="date" x-model="simpleForm.tanggal" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Jenis Pelanggaran</label><select x-model="simpleForm.jenis_pelanggaran" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"><option>Ringan</option><option>Sedang</option><option>Berat</option></select></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Sanksi</label><input type="text" x-model="simpleForm.sanksi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></div>
+          <div class="sm:col-span-2"><label class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5 block">Catatan</label><textarea x-model="simpleForm.catatan" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"></textarea></div>
+        </div>
+      </template>
+
+    </div>
+    <div class="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+      <button @click="simpleFormOpen=false" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Batal</button>
+      <button @click="saveSimpleForm()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= RECEIPT / KWITANSI PRINT MODAL ============================= -->
+<div x-show="receiptOpen" x-cloak class="fixed inset-0 z-[95] flex items-center justify-center p-4" style="display:none">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm no-print" @click="receiptOpen=false"></div>
+  <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-pop w-full max-w-md animate-scale-in overflow-hidden">
+    <div id="print-area" class="p-7" x-show="receiptData">
+      <div class="flex items-center gap-3 pb-4 border-b-2 border-dashed border-slate-200 dark:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0"><i data-lucide="book-open-check" class="w-5 h-5 text-white"></i></div>
+        <div>
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Pondok Pesantren Alhidayah Induk</p>
+          <p class="text-[11px] text-slate-400">Kwitansi Pembayaran Resmi</p>
+        </div>
+      </div>
+      <template x-if="receiptData">
+        <div class="py-4 space-y-2.5 text-sm">
+          <div class="flex justify-between"><span class="text-slate-400">No. Kwitansi</span><span class="font-mono-num font-semibold text-slate-700 dark:text-slate-200" x-text="receiptData.no_kwitansi"></span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Nama Santri</span><span class="font-semibold text-slate-700 dark:text-slate-200" x-text="receiptData.nama_santri"></span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Jenis Pembayaran</span><span class="text-slate-700 dark:text-slate-200" x-text="receiptData.jenis"></span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Tanggal</span><span class="text-slate-700 dark:text-slate-200" x-text="fmtDate(receiptData.tanggal)"></span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Metode</span><span class="text-slate-700 dark:text-slate-200" x-text="receiptData.metode"></span></div>
+          <div class="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
+          <div class="flex justify-between items-center"><span class="text-slate-500 font-semibold">Total Dibayar</span><span class="font-mono-num font-bold text-lg text-emerald-600" x-text="fmtRupiah(receiptData.nominal)"></span></div>
+        </div>
+      </template>
+      <p class="text-center text-[11px] text-slate-400 pt-3 border-t-2 border-dashed border-slate-200 dark:border-slate-700">Kwitansi ini dicetak otomatis oleh sistem PesantrenPro</p>
+    </div>
+    <div class="flex gap-2 px-7 pb-6 no-print">
+      <button @click="receiptOpen=false" class="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300">Tutup</button>
+      <button @click="window.print()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function app(){
+  return {
+    // ---------- core ui state ----------
+    darkMode:false, sidebarOpen:true, mobileNavOpen:false,
+    auth:{ loggedIn:false, user:null },
+    loginForm:{ username:'admin@alhidayah.sch.id', password:'demo1234', role:'super_admin', remember:false },
+    loginLoading:false, showPass:false, showForgot:false, forgotEmail:'',
+    toasts:[],
+    notifOpen:false, profileOpen:false,
+    globalSearch:'', globalSearchOpen:false, globalSearchResults:[],
+    currentPage:'dashboard', currentParams:{},
+    tahunAjaran:'2025/2026',
+    listSearch:'',
+    laporanFilter:{ jenis:'santri', dari:'', sampai:'', gender:'', jenjang:'' },
+    santriFilter:{ q:'', jenjang:'', status:'', angkatan:'' },
+    santriPage:1, santriPerPage:8, loadingTable:false,
+    santriWizardOpen:false, wizardStep:1, santriForm:{},
+    santriDetailOpen:false, santriDetail:null,
+    cropperOpen:false, cropTarget:'', cropIsSimple:false, cropImageObj:null, cropZoom:1, cropOffset:{x:0,y:0}, cropDragging:false, cropLast:{x:0,y:0},
+    confirmModal:{ open:false, type:'', id:null, name:'' },
+    simpleFormOpen:false, simpleFormType:'', simpleForm:{},
+    receiptOpen:false, receiptData:null,
+    pwForm:{ old:'', baru:'', konfirmasi:'' },
+    _iconTimer:null, _chartSantri:null, _chartAlumni:null, _chartKeuangan:null,
+
+    // ---------- data ----------
+    users:[], santri:[], pengurus:[], guru:[], alumni:[], pembayaran:[], perizinan:[], pelanggaran:[], riwayatLog:[], pengumuman:[], agenda:[], activityLog:[],
+
+    menu:[
+      { group:null, items:[
+        { key:'dashboard', label:'Dashboard', icon:'layout-dashboard', page:'dashboard', params:{}, roles:['super_admin','bendahara','keamanan'] }
+      ]},
+      { group:'Data Santri', items:[
+        { key:'santri-putra', label:'Santri Putra', icon:'user', page:'santri', params:{gender:'L'}, roles:['super_admin'] },
+        { key:'santri-putri', label:'Santri Putri', icon:'user', page:'santri', params:{gender:'P'}, roles:['super_admin'] }
+      ]},
+      { group:'Data Pengurus', items:[
+        { key:'pengurus-putra', label:'Pengurus Putra', icon:'users', page:'pengurus', params:{gender:'L'}, roles:['super_admin'] },
+        { key:'pengurus-putri', label:'Pengurus Putri', icon:'users', page:'pengurus', params:{gender:'P'}, roles:['super_admin'] }
+      ]},
+      { group:'Data Guru', items:[
+        { key:'guru-quran-l', label:"Qur'an Putra", icon:'book-open', page:'guru', params:{jenis:"Madrasah Qur'an", gender:'L'}, roles:['super_admin'] },
+        { key:'guru-quran-p', label:"Qur'an Putri", icon:'book-open', page:'guru', params:{jenis:"Madrasah Qur'an", gender:'P'}, roles:['super_admin'] },
+        { key:'guru-diniyah-l', label:'Diniyah Putra', icon:'book-marked', page:'guru', params:{jenis:'Madrasah Diniyah', gender:'L'}, roles:['super_admin'] },
+        { key:'guru-diniyah-p', label:'Diniyah Putri', icon:'book-marked', page:'guru', params:{jenis:'Madrasah Diniyah', gender:'P'}, roles:['super_admin'] },
+        { key:'guru-amtsilati-l', label:'Amtsilati Putra', icon:'bookmark', page:'guru', params:{jenis:'Amtsilati', gender:'L'}, roles:['super_admin'] },
+        { key:'guru-amtsilati-p', label:'Amtsilati Putri', icon:'bookmark', page:'guru', params:{jenis:'Amtsilati', gender:'P'}, roles:['super_admin'] }
+      ]},
+      { group:'Data Alumni', items:[
+        { key:'alumni-putra', label:'Alumni Putra', icon:'graduation-cap', page:'alumni', params:{gender:'L'}, roles:['super_admin'] },
+        { key:'alumni-putri', label:'Alumni Putri', icon:'graduation-cap', page:'alumni', params:{gender:'P'}, roles:['super_admin'] }
+      ]},
+      { group:'Bendahara', items:[
+        { key:'bendahara-makan', label:'Uang Makan', icon:'utensils', page:'bendahara', params:{jenis:'Uang Makan'}, roles:['super_admin','bendahara'] },
+        { key:'bendahara-syariah', label:'Uang Syariah', icon:'wallet', page:'bendahara', params:{jenis:'Syahriah'}, roles:['super_admin','bendahara'] },
+        { key:'bendahara-tabungan', label:'Tabungan', icon:'piggy-bank', page:'bendahara', params:{jenis:'Tabungan'}, roles:['super_admin','bendahara'] }
+      ]},
+      { group:'Keamanan', items:[
+        { key:'perizinan', label:'Perizinan', icon:'door-open', page:'perizinan', params:{}, roles:['super_admin','keamanan'] },
+        { key:'pelanggaran', label:'Pelanggaran', icon:'shield-alert', page:'pelanggaran', params:{}, roles:['super_admin','keamanan'] },
+        { key:'riwayat', label:'Riwayat Keluar Masuk', icon:'history', page:'riwayat', params:{}, roles:['super_admin','keamanan'] }
+      ]},
+      { group:null, items:[
+        { key:'laporan', label:'Laporan', icon:'file-bar-chart', page:'laporan', params:{}, roles:['super_admin'] }
+      ]},
+      { group:null, items:[
+        { key:'pengaturan', label:'Pengaturan', icon:'settings', page:'pengaturan', params:{}, roles:['super_admin'] }
+      ]},
+      { group:null, items:[
+        { key:'profil', label:'Profil Pengguna', icon:'user-circle', page:'profil', params:{}, roles:['super_admin','bendahara','keamanan'] }
+      ]}
+    ],
+
+    // ================= INIT =================
+    init(){
+      this.darkMode = localStorage.getItem('pp_dark')==='1' || (!localStorage.getItem('pp_dark') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      this.$watch('darkMode', v => localStorage.setItem('pp_dark', v ? '1':'0'));
+      const restored = this.loadPersisted();
+      if(!restored){ this.seed(); this.persist(); }
+      this.notifications = this.notifications && this.notifications.length ? this.notifications : this.seedNotifications();
+      const obs = new MutationObserver(()=>{ clearTimeout(this._iconTimer); this._iconTimer = setTimeout(()=>{ try{ lucide.createIcons(); }catch(e){} }, 60); });
+      obs.observe(document.body, { childList:true, subtree:true });
+      this.$nextTick(()=> { try{ lucide.createIcons(); }catch(e){} });
+      window.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key==='k'){ e.preventDefault(); const el=document.querySelector('header input[type=text]'); if(el) el.focus(); } });
+    },
+
+    // ================= AUTH =================
+    login(){
+      this.loginLoading = true;
+      setTimeout(()=>{
+        let u = this.users.find(u=>u.role===this.loginForm.role);
+        if(!u) u = this.users[0];
+        this.auth = { loggedIn:true, user: JSON.parse(JSON.stringify(u)) };
+        this.loginLoading = false;
+        this.currentPage = 'dashboard'; this.currentParams = {};
+        this.toast('success','Berhasil masuk','Selamat datang kembali, '+this.auth.user.name+'.');
+        this.logActivity('masuk ke sistem');
+        this.renderCharts();
+      }, 700);
+    },
+    logout(){
+      this.logActivity('keluar dari sistem');
+      this.auth = { loggedIn:false, user:null };
+      this.currentPage='dashboard'; this.currentParams={};
+      this.toast('info','Anda telah keluar','Sampai jumpa kembali!');
+    },
+    sendResetLink(){
+      if(!this.forgotEmail){ this.toast('error','Email diperlukan','Masukkan alamat email akun Anda.'); return; }
+      this.toast('success','Tautan terkirim','Tautan reset password (demo) telah dikirim ke '+this.forgotEmail);
+      this.showForgot=false; this.forgotEmail='';
+    },
+    roleLabel(r){ return { super_admin:'Super Admin', bendahara:'Bendahara', keamanan:'Keamanan' }[r] || r; },
+
+    // ================= NAVIGATION / RBAC =================
+    canSee(item){ if(!item.roles) return true; return !!(this.auth.user && item.roles.includes(this.auth.user.role)); },
+    canAccessPage(page){ const item = this.menu.flatMap(g=>g.items).find(it=>it.page===page); return item ? this.canSee(item) : true; },
+    canAccessCurrentPage(){ return this.canAccessPage(this.currentPage); },
+    navigate(item){
+      this.currentPage = item.page; this.currentParams = item.params || {};
+      this.santriPage = 1; this.listSearch=''; this.globalSearchOpen=false; this.globalSearch='';
+      this.$nextTick(()=>{ try{ lucide.createIcons(); }catch(e){} if(item.page==='dashboard') this.renderCharts(); });
+    },
+    isActive(item){ return this.currentPage===item.page && JSON.stringify(this.currentParams)===JSON.stringify(item.params||{}); },
+    pageTitle(){
+      const item = this.menu.flatMap(g=>g.items).find(it=> it.page===this.currentPage && JSON.stringify(it.params||{})===JSON.stringify(this.currentParams));
+      return item ? item.label : (this.currentPage==='profil' ? 'Profil Pengguna' : this.currentPage);
+    },
+    todayText(){ return new Date().toLocaleDateString('id-ID',{ weekday:'long', day:'numeric', month:'long', year:'numeric' }); },
+
+    // ================= DASHBOARD =================
+    get stats(){
+      return {
+        totalSantri: this.santri.filter(s=>s.status==='Aktif').length,
+        totalGuru: this.guru.length,
+        totalAlumni: this.alumni.length
+      };
+    },
+    dashboardCards(){
+      const s = this.santri, aktif = s.filter(x=>x.status==='Aktif');
+      const putra = aktif.filter(x=>x.jenis_kelamin==='L').length;
+      const putri = aktif.filter(x=>x.jenis_kelamin==='P').length;
+      const totalBayar = this.pembayaran.reduce((sum,p)=>sum+Number(p.nominal||0),0);
+      return [
+        { label:'Total Santri', value: aktif.length, icon:'users', bg:'bg-emerald-50 dark:bg-emerald-900/30', fg:'text-emerald-600 dark:text-emerald-400', trend:4 },
+        { label:'Santri Putra', value: putra, icon:'user', bg:'bg-blue-50 dark:bg-blue-900/30', fg:'text-blue-600 dark:text-blue-400', trend:2 },
+        { label:'Santri Putri', value: putri, icon:'user', bg:'bg-pink-50 dark:bg-pink-900/30', fg:'text-pink-600 dark:text-pink-400', trend:3 },
+        { label:'Total Guru', value: this.guru.length, icon:'graduation-cap', bg:'bg-amber-50 dark:bg-amber-900/30', fg:'text-amber-600 dark:text-amber-400', trend:0 },
+        { label:'Total Pengurus', value: this.pengurus.length, icon:'shield-check', bg:'bg-violet-50 dark:bg-violet-900/30', fg:'text-violet-600 dark:text-violet-400', trend:1 },
+        { label:'Total Alumni', value: this.alumni.length, icon:'award', bg:'bg-cyan-50 dark:bg-cyan-900/30', fg:'text-cyan-600 dark:text-cyan-400', trend:6 },
+        { label:'Total Pembayaran', value: this.fmtRupiah(totalBayar), icon:'wallet', bg:'bg-emerald-50 dark:bg-emerald-900/30', fg:'text-emerald-600 dark:text-emerald-400', trend:8 },
+        { label:'Total Perizinan', value: this.perizinan.length, icon:'door-open', bg:'bg-red-50 dark:bg-red-900/30', fg:'text-red-500 dark:text-red-400', trend:-2 }
+      ];
+    },
+
+    // ================= NOTIFICATIONS =================
+    notifications:[],
+    seedNotifications(){
+      return [
+        { id:this.uid(), title:'Pembayaran Baru', message:'Syahriah bulan ini telah dibayarkan oleh salah satu santri.', time:'10 menit lalu', read:false },
+        { id:this.uid(), title:'Izin Keluar', message:'Ada santri yang mengajukan izin keluar pondok.', time:'1 jam lalu', read:false },
+        { id:this.uid(), title:'Pengumuman Baru', message:'Jadwal kegiatan pekan ini telah diperbarui.', time:'Kemarin', read:true }
+      ];
+    },
+    get unreadNotif(){ return this.notifications.filter(n=>!n.read).length; },
+    markAllRead(){ this.notifications.forEach(n=>n.read=true); },
+
+    // ================= GLOBAL SEARCH =================
+    doGlobalSearch(){
+      if(!this.globalSearch){ this.globalSearchResults=[]; return; }
+      const q = this.globalSearch.toLowerCase(); let res=[];
+      this.santri.forEach(s=>{ if(s.nama_lengkap.toLowerCase().includes(q)) res.push({id:s.id,type:'Santri',name:s.nama_lengkap,icon:'user',ref:s,nav:{page:'santri',params:{gender:s.jenis_kelamin}}}); });
+      this.guru.forEach(g=>{ if(g.nama.toLowerCase().includes(q)) res.push({id:g.id,type:'Guru',name:g.nama,icon:'graduation-cap',nav:{page:'guru',params:{jenis:g.jenis_guru,gender:g.jenis_kelamin}}}); });
+      this.alumni.forEach(a=>{ if(a.nama.toLowerCase().includes(q)) res.push({id:a.id,type:'Alumni',name:a.nama,icon:'award',nav:{page:'alumni',params:{gender:a.jenis_kelamin}}}); });
+      this.pengurus.forEach(p=>{ if(p.nama.toLowerCase().includes(q)) res.push({id:p.id,type:'Pengurus',name:p.nama,icon:'users',nav:{page:'pengurus',params:{gender:p.jenis_kelamin}}}); });
+      this.globalSearchResults = res.slice(0,8);
+    },
+    goToSearchResult(r){
+      if(!this.canAccessPage(r.nav.page)){ this.toast('error','Akses ditolak','Peran Anda tidak memiliki akses ke halaman ini.'); return; }
+      this.currentPage = r.nav.page; this.currentParams = r.nav.params;
+      this.globalSearch=''; this.globalSearchOpen=false;
+      if(r.type==='Santri') this.$nextTick(()=> this.viewSantri(r.ref));
+    },
+
+    // ================= SANTRI =================
+    filteredSantri(){
+      return this.santri.filter(s=>{
+        if(this.currentParams.gender && s.jenis_kelamin!==this.currentParams.gender) return false;
+        if(this.santriFilter.q){ const q=this.santriFilter.q.toLowerCase(); if(!(s.nama_lengkap.toLowerCase().includes(q) || String(s.nis).includes(q) || String(s.nisn).includes(q))) return false; }
+        if(this.santriFilter.jenjang && s.jenjang_pondok!==this.santriFilter.jenjang) return false;
+        if(this.santriFilter.status && s.status!==this.santriFilter.status) return false;
+        if(this.santriFilter.angkatan && String(s.angkatan)!==String(this.santriFilter.angkatan)) return false;
+        return true;
+      });
+    },
+    paginatedSantri(){ const list=this.filteredSantri(); const start=(this.santriPage-1)*this.santriPerPage; return list.slice(start,start+this.santriPerPage); },
+    pageInfo(list){ const pages=Math.max(1,Math.ceil(list.length/this.santriPerPage)); const from = list.length===0?0:(this.santriPage-1)*this.santriPerPage+1; const to=Math.min(list.length,this.santriPage*this.santriPerPage); return {from,to,pages}; },
+    angkatanList(){ return [...new Set(this.santri.map(s=>s.angkatan))].sort((a,b)=>b-a); },
+
+    blankSantri(){
+      return { id:null, jenis_pondok:'Pondok Putra', jenjang_pondok:'MTS', nis:this.generateNIS(), nisn:'', nik:'', nama_lengkap:'', jenis_kelamin:'L', tempat_lahir:'', tanggal_lahir:'', foto:'',
+        sekolah_asal:'', jenjang_sekolah_asal:'SD/MI', alamat:'', provinsi:'', kabupaten:'', kecamatan:'', kode_pos:'',
+        nama_ayah:'', nik_ayah:'', status_ayah:'Masih Hidup', pekerjaan_ayah:'', penghasilan_ayah:'',
+        nama_ibu:'', nik_ibu:'', status_ibu:'Masih Hidup', pekerjaan_ibu:'', penghasilan_ibu:'',
+        telepon_ortu:'', status_rumah:'Milik Sendiri', foto_kk:'', status:'Aktif', angkatan:new Date().getFullYear() };
+    },
+    generateNIS(){ const yr=new Date().getFullYear(); const seq=String((this.santri?this.santri.length:0)+1).padStart(3,'0'); return `${yr}${seq}`; },
+    openSantriWizard(s){
+      this.wizardStep=1;
+      this.santriForm = s ? JSON.parse(JSON.stringify(s)) : this.blankSantri();
+      this.santriWizardOpen=true;
+      this.$nextTick(()=>{ try{ lucide.createIcons(); }catch(e){} });
+    },
+    closeSantriWizard(){ this.santriWizardOpen=false; },
+    wizardStepLabel(){ return ['Info Akademik & Pondok','Data Pribadi','Pendidikan & Alamat','Data Orang Tua','Kontak & Dokumen'][this.wizardStep-1]; },
+    saveSantri(){
+      if(!this.santriForm.nama_lengkap){ this.toast('error','Data belum lengkap','Nama lengkap santri wajib diisi.'); this.wizardStep=2; return; }
+      this.santriForm.jenis_pondok = this.santriForm.jenis_kelamin==='L' ? 'Pondok Putra' : 'Pondok Putri';
+      if(this.santriForm.id){
+        const idx=this.santri.findIndex(x=>x.id===this.santriForm.id); this.santri[idx]={...this.santriForm};
+        this.logActivity('memperbarui data santri '+this.santriForm.nama_lengkap);
+      } else {
+        this.santriForm.id=this.uid(); this.santri.unshift({...this.santriForm});
+        this.logActivity('menambahkan santri baru '+this.santriForm.nama_lengkap);
+      }
+      this.persist(); this.santriWizardOpen=false;
+      this.toast('success','Berhasil disimpan','Data santri telah disimpan.'); this.renderCharts();
+    },
+    viewSantri(s){ this.santriDetail=s; this.santriDetailOpen=true; this.$nextTick(()=>{ try{ lucide.createIcons(); }catch(e){} }); },
+
+    // ================= GENERIC LIST HELPERS =================
+    filteredList(list, nameField){
+      let arr = list;
+      if(this.currentParams.gender){ arr = arr.filter(x=>x.jenis_kelamin===this.currentParams.gender); }
+      if(this.listSearch){ const q=this.listSearch.toLowerCase(); arr = arr.filter(x=>(x[nameField]||'').toLowerCase().includes(q)); }
+      return arr;
+    },
+    guruList(){
+      return this.guru.filter(g=> g.jenis_guru===this.currentParams.jenis && g.jenis_kelamin===this.currentParams.gender && (!this.listSearch || g.nama.toLowerCase().includes(this.listSearch.toLowerCase())) );
+    },
+    alumniOf(){ return this.alumni; },
+    bendaharaList(){ return this.pembayaran.filter(p=>p.jenis===this.currentParams.jenis); },
+
+    // ================= GENERIC SIMPLE FORM (pengurus/guru/alumni/pembayaran/perizinan/pelanggaran) =================
+    blankSimple(type){
+      const base={id:null};
+      if(type==='pengurus') return {...base, foto:'', nama:'', jabatan:'', jenis_kelamin: this.currentParams.gender||'L', alamat:'', no_hp:'', periode:'', status:'Aktif'};
+      if(type==='guru') return {...base, foto:'', nama:'', jenis_guru: this.currentParams.jenis || "Madrasah Qur'an", jenis_kelamin: this.currentParams.gender || 'L', no_hp:'', alamat:'', status:'Aktif'};
+      if(type==='alumni') return {...base, foto:'', nama:'', tahun_masuk:new Date().getFullYear()-6, tahun_lulus:new Date().getFullYear(), pekerjaan:'', alamat:'', no_hp:'', status:'Terverifikasi', catatan:'', jenis_kelamin:this.currentParams.gender||'L'};
+      if(type==='pembayaran') return {...base, santri_id:'', nama_santri:'', jenis:this.currentParams.jenis||'Syahriah', nominal:'', tanggal:this.todayISO(), metode:'Tunai', status:'Lunas', bukti:'', no_kwitansi:this.generateKwitansi()};
+      if(type==='perizinan') return {...base, santri_id:'', nama_santri:'', tgl_keluar:this.todayISO(), jam_keluar:'', tgl_kembali:this.todayISO(), jam_kembali:'', tujuan:'', penanggung_jawab:'', surat_izin:'', status:'Keluar'};
+      if(type==='pelanggaran') return {...base, santri_id:'', nama_santri:'', tanggal:this.todayISO(), jenis_pelanggaran:'Ringan', sanksi:'', catatan:''};
+      return base;
+    },
+    openSimpleForm(type, obj){
+      this.simpleFormType=type;
+      this.simpleForm = obj ? JSON.parse(JSON.stringify(obj)) : this.blankSimple(type);
+      this.simpleFormOpen=true;
+      this.$nextTick(()=>{ try{ lucide.createIcons(); }catch(e){} });
+    },
+    simpleFormTitle(){ return { pengurus:'Pengurus', guru:'Guru', alumni:'Alumni', pembayaran:'Pembayaran', perizinan:'Perizinan', pelanggaran:'Pelanggaran' }[this.simpleFormType] || ''; },
+    onSelectSantriPay(){ const s=this.santri.find(x=>x.id===this.simpleForm.santri_id); if(s) this.simpleForm.nama_santri=s.nama_lengkap; },
+    onSelectSantriIzin(){ const s=this.santri.find(x=>x.id===this.simpleForm.santri_id); if(s) this.simpleForm.nama_santri=s.nama_lengkap; },
+    onSelectSantriLanggar(){ const s=this.santri.find(x=>x.id===this.simpleForm.santri_id); if(s) this.simpleForm.nama_santri=s.nama_lengkap; },
+    attachFile(event, field){ const file=event.target.files[0]; if(!file) return; this.simpleForm[field]=file.name; this.toast('success','Berkas terlampir', file.name+' berhasil dilampirkan.'); },
+    saveSimpleForm(){
+      const type=this.simpleFormType; const key=type;
+      if((type==='perizinan'||type==='pelanggaran'||type==='pembayaran') && !this.simpleForm.santri_id){ this.toast('error','Data belum lengkap','Pilih santri terlebih dahulu.'); return; }
+      if(!this.simpleForm.nama && (type==='pengurus'||type==='guru'||type==='alumni')){ this.toast('error','Data belum lengkap','Nama wajib diisi.'); return; }
+      if(this.simpleForm.id){
+        const idx=this[key].findIndex(x=>x.id===this.simpleForm.id); this[key][idx]={...this.simpleForm};
+        this.logActivity('memperbarui data '+type);
+      } else {
+        this.simpleForm.id=this.uid(); this[key].unshift({...this.simpleForm});
+        if(type==='perizinan'){ this.riwayatLog.push({ id:this.uid(), santri_id:this.simpleForm.santri_id, nama_santri:this.simpleForm.nama_santri, tipe:'Keluar', waktu:this.nowText(), keterangan:'Izin: '+this.simpleForm.tujuan }); }
+        this.logActivity('menambahkan data '+type+(this.simpleForm.nama_santri?' untuk '+this.simpleForm.nama_santri:(this.simpleForm.nama?' - '+this.simpleForm.nama:'')));
+      }
+      this.persist(); this.simpleFormOpen=false;
+      this.toast('success','Berhasil disimpan','Data telah disimpan.'); this.renderCharts();
+    },
+    tandaiKembali(p){
+      p.status='Kembali';
+      this.riwayatLog.push({ id:this.uid(), santri_id:p.santri_id, nama_santri:p.nama_santri, tipe:'Masuk', waktu:this.nowText(), keterangan:'Kembali dari izin: '+p.tujuan });
+      this.persist(); this.toast('success','Status diperbarui', p.nama_santri+' telah ditandai kembali ke pondok.');
+    },
+    printReceipt(p){ this.receiptData=p; this.receiptOpen=true; this.$nextTick(()=>{ try{ lucide.createIcons(); }catch(e){} }); },
+
+    // ================= DELETE =================
+    confirmDelete(type,id,name){ this.confirmModal={ open:true, type, id, name }; },
+    doDelete(){
+      const { type, id, name } = this.confirmModal;
+      if(this[type]) this[type] = this[type].filter(x=>x.id!==id);
+      this.persist(); this.confirmModal.open=false;
+      this.toast('success','Data dihapus', name+' telah dihapus dari sistem.');
+      this.logActivity('menghapus data '+type+' - '+name);
+      this.renderCharts();
+    },
+
+    // ================= IMAGE CROP =================
+    openCropper(event, targetField, isSimple){
+      const file=event.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        const img=new Image();
+        img.onload=()=>{
+          this.cropImageObj=img; this.cropTarget=targetField; this.cropIsSimple=!!isSimple;
+          this.cropZoom=1; this.cropOffset={x:0,y:0}; this.cropperOpen=true;
+          this.$nextTick(()=> this.drawCrop());
+        };
+        img.src=e.target.result;
+      };
+      reader.readAsDataURL(file); event.target.value='';
+    },
+    drawCrop(){
+      const canvas=document.getElementById('cropCanvas'); if(!canvas || !this.cropImageObj) return;
+      const ctx=canvas.getContext('2d'); const size=300; canvas.width=size; canvas.height=size;
+      ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,size,size);
+      const img=this.cropImageObj;
+      const scale=Math.max(size/img.width, size/img.height)*this.cropZoom;
+      const w=img.width*scale, h=img.height*scale;
+      const x=size/2 - w/2 + this.cropOffset.x, y=size/2 - h/2 + this.cropOffset.y;
+      ctx.drawImage(img, x, y, w, h);
+      ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=2; ctx.strokeRect(3,3,size-6,size-6);
+    },
+    cropDrag(e, phase){
+      const point = e.touches ? e.touches[0] : e;
+      if(phase==='start'){ this.cropDragging=true; this.cropLast={x:point.clientX,y:point.clientY}; if(e.preventDefault) e.preventDefault(); }
+      else if(phase==='move' && this.cropDragging){ const dx=point.clientX-this.cropLast.x, dy=point.clientY-this.cropLast.y; this.cropOffset.x+=dx; this.cropOffset.y+=dy; this.cropLast={x:point.clientX,y:point.clientY}; this.drawCrop(); if(e.preventDefault) e.preventDefault(); }
+      else if(phase==='end'){ this.cropDragging=false; }
+    },
+    applyCrop(){
+      const canvas=document.getElementById('cropCanvas'); if(!canvas) return;
+      const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+      if(this.cropIsSimple){ this.simpleForm[this.cropTarget]=dataUrl; } else { this.santriForm[this.cropTarget]=dataUrl; }
+      this.cropperOpen=false;
+      this.toast('success','Foto diperbarui','Gambar berhasil dipotong dan disimpan.');
+    },
+    placeholderAvatar(gender){
+      const bg = gender==='P' ? 'rgb(252,231,243)' : 'rgb(219,234,254)';
+      const fg = gender==='P' ? 'rgb(219,39,119)' : 'rgb(37,99,235)';
+      return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='20' fill='"+bg+"'/><circle cx='20' cy='16' r='7' fill='"+fg+"'/><path d='M6 34c2-8 8-12 14-12s12 4 14 12' fill='"+fg+"'/></svg>";
+    },
+    placeholderDoc(){
+      return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'><rect width='100' height='60' fill='rgb(241,245,249)'/><rect x='10' y='15' width='80' height='6' fill='rgb(203,213,225)'/><rect x='10' y='27' width='60' height='6' fill='rgb(203,213,225)'/><rect x='10' y='39' width='70' height='6' fill='rgb(203,213,225)'/></svg>";
+    },
+
+    // ================= IMPORT / EXPORT =================
+    triggerImport(type){ const el=document.getElementById('import-'+type); if(el) el.click(); },
+    handleImport(event, type){
+      const file=event.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        try{
+          const text=e.target.result; const lines=text.split(/\r?\n/).filter(l=>l.trim());
+          const headers=lines[0].split(',').map(h=>h.replace(/"/g,'').trim());
+          let count=0;
+          for(let i=1;i<lines.length;i++){
+            const vals=lines[i].split(','); const obj={};
+            headers.forEach((h,idx)=> obj[h]=(vals[idx]||'').replace(/"/g,'').trim());
+            obj.id=this.uid();
+            if(type==='santri'){ obj.status=obj.status||'Aktif'; obj.jenis_kelamin=obj.jenis_kelamin||'L'; this.santri.unshift(obj); }
+            count++;
+          }
+          this.persist(); this.toast('success','Impor selesai', count+' baris berhasil diimpor.'); this.renderCharts();
+        }catch(err){ this.toast('error','Gagal impor','Format berkas CSV tidak sesuai.'); }
+      };
+      reader.readAsText(file); event.target.value='';
+    },
+    exportCSV(list, filename){
+      if(!list || list.length===0){ this.toast('warning','Tidak ada data','Tidak ada data untuk diekspor.'); return; }
+      const exclude=['foto','foto_kk','bukti','surat_izin'];
+      const headers=Object.keys(list[0]).filter(k=>!exclude.includes(k));
+      let csv=headers.join(',')+'\n';
+      list.forEach(row=>{ csv += headers.map(h=>'"'+String(row[h]==null?'':row[h]).replace(/"/g,'""')+'"').join(',')+'\n'; });
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename+'.csv'; a.click(); URL.revokeObjectURL(url);
+      this.toast('success','Berhasil diekspor','Berkas CSV telah diunduh.');
+    },
+    exportPDF(title){
+      this.toast('info','Menyiapkan cetak','Gunakan dialog cetak browser untuk menyimpan sebagai PDF.');
+      this.$nextTick(()=> setTimeout(()=> window.print(), 200));
+    },
+
+    // ================= LAPORAN =================
+    laporanColumns(){
+      const map={
+        santri:[{key:'nama_lengkap',label:'Nama'},{key:'nis',label:'NIS'},{key:'jenjang_pondok',label:'Jenjang'},{key:'angkatan',label:'Angkatan'},{key:'status',label:'Status'}],
+        guru:[{key:'nama',label:'Nama'},{key:'jenis_guru',label:'Kategori'},{key:'no_hp',label:'No. HP'},{key:'status',label:'Status'}],
+        pengurus:[{key:'nama',label:'Nama'},{key:'jabatan',label:'Jabatan'},{key:'periode',label:'Periode'},{key:'status',label:'Status'}],
+        alumni:[{key:'nama',label:'Nama'},{key:'tahun_lulus',label:'Tahun Lulus'},{key:'pekerjaan',label:'Pekerjaan'}],
+        pembayaran:[{key:'nama_santri',label:'Santri'},{key:'jenis',label:'Jenis'},{key:'nominal',label:'Nominal'},{key:'tanggal',label:'Tanggal'},{key:'status',label:'Status'}],
+        perizinan:[{key:'nama_santri',label:'Santri'},{key:'tgl_keluar',label:'Tgl Keluar'},{key:'tujuan',label:'Tujuan'},{key:'status',label:'Status'}]
+      };
+      return map[this.laporanFilter.jenis] || [];
+    },
+    laporanData(){
+      let list = (this[this.laporanFilter.jenis] || []).slice();
+      if(this.laporanFilter.gender){ list = list.filter(x=>x.jenis_kelamin===this.laporanFilter.gender); }
+      if(this.laporanFilter.jenjang && this.laporanFilter.jenis==='santri'){ list = list.filter(x=>x.jenjang_pondok===this.laporanFilter.jenjang); }
+      if(this.laporanFilter.dari){ list = list.filter(x=>{ const d=x.tanggal||x.tgl_keluar||x.tanggal_lahir; return !d || d>=this.laporanFilter.dari; }); }
+      if(this.laporanFilter.sampai){ list = list.filter(x=>{ const d=x.tanggal||x.tgl_keluar||x.tanggal_lahir; return !d || d<=this.laporanFilter.sampai; }); }
+      return list.map(x=>{
+        const clone={...x};
+        if(clone.nominal!==undefined) clone.nominal=this.fmtRupiah(clone.nominal);
+        if(clone.tanggal) clone.tanggal=this.fmtDate(clone.tanggal);
+        if(clone.tgl_keluar) clone.tgl_keluar=this.fmtDate(clone.tgl_keluar);
+        return clone;
+      });
+    },
+
+    // ================= PENGATURAN =================
+    backupData(){
+      const payload={ santri:this.santri, pengurus:this.pengurus, guru:this.guru, alumni:this.alumni, pembayaran:this.pembayaran, perizinan:this.perizinan, pelanggaran:this.pelanggaran, riwayatLog:this.riwayatLog, pengumuman:this.pengumuman, agenda:this.agenda, users:this.users, exported_at:new Date().toISOString() };
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='pesantrenpro-backup-'+this.todayISO()+'.json'; a.click(); URL.revokeObjectURL(url);
+      this.logActivity('membuat cadangan basis data');
+      this.toast('success','Backup berhasil','Berkas cadangan telah diunduh.');
+    },
+    restoreData(event){
+      const file=event.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        try{
+          const data=JSON.parse(e.target.result);
+          ['santri','pengurus','guru','alumni','pembayaran','perizinan','pelanggaran','riwayatLog','pengumuman','agenda','users'].forEach(k=>{ if(data[k]) this[k]=data[k]; });
+          this.persist(); this.renderCharts(); this.logActivity('memulihkan basis data dari cadangan');
+          this.toast('success','Restore berhasil','Data sistem telah dipulihkan.');
+        }catch(err){ this.toast('error','Gagal restore','Berkas cadangan tidak valid.'); }
+      };
+      reader.readAsText(file); event.target.value='';
+    },
+    saveProfile(){ const idx=this.users.findIndex(u=>u.id===this.auth.user.id); if(idx>-1) this.users[idx]={...this.auth.user}; this.persist(); this.toast('success','Profil diperbarui','Perubahan profil telah disimpan.'); },
+    changePassword(){
+      if(!this.pwForm.old || !this.pwForm.baru){ this.toast('error','Data belum lengkap','Lengkapi seluruh kolom password.'); return; }
+      if(this.pwForm.baru!==this.pwForm.konfirmasi){ this.toast('error','Tidak cocok','Konfirmasi password baru tidak sama.'); return; }
+      this.pwForm={old:'',baru:'',konfirmasi:''};
+      this.toast('success','Password diperbarui','Kata sandi Anda berhasil diganti.');
+    },
+
+    // ================= CHARTS =================
+    renderCharts(){ if(this.currentPage!=='dashboard') return; this.$nextTick(()=>{ this.buildChartSantri(); this.buildChartAlumni(); this.buildChartKeuangan(); }); },
+    chartOpts(isCurrency){
+      return { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{ x:{grid:{display:false}, ticks:{font:{size:10}}}, y:{grid:{color:'rgba(148,163,184,0.15)'}, ticks:{font:{size:10}, callback:(v)=> isCurrency ? (v>=1000000 ? (v/1000000)+'jt' : v) : v }} } };
+    },
+    buildChartSantri(){
+      const el=document.getElementById('chartSantri'); if(!el) return;
+      const byYear={}; this.santri.forEach(s=>{ byYear[s.angkatan]=(byYear[s.angkatan]||0)+1; });
+      const labels=Object.keys(byYear).sort(); const data=labels.map(l=>byYear[l]);
+      if(this._chartSantri) this._chartSantri.destroy();
+      this._chartSantri=new Chart(el, { type:'bar', data:{ labels, datasets:[{ label:'Santri', data, backgroundColor:'#059669', borderRadius:6, maxBarThickness:36 }] }, options:this.chartOpts() });
+    },
+    buildChartAlumni(){
+      const el=document.getElementById('chartAlumni'); if(!el) return;
+      const byYear={}; this.alumni.forEach(a=>{ byYear[a.tahun_lulus]=(byYear[a.tahun_lulus]||0)+1; });
+      const labels=Object.keys(byYear).sort(); const data=labels.map(l=>byYear[l]);
+      if(this._chartAlumni) this._chartAlumni.destroy();
+      this._chartAlumni=new Chart(el, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:['#059669','#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'] }] }, options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:10} } } } } });
+    },
+    buildChartKeuangan(){
+      const el=document.getElementById('chartKeuangan'); if(!el) return;
+      const months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      const totals=new Array(12).fill(0);
+      this.pembayaran.forEach(p=>{ const d=new Date(p.tanggal); if(!isNaN(d)) totals[d.getMonth()] += Number(p.nominal||0); });
+      if(this._chartKeuangan) this._chartKeuangan.destroy();
+      this._chartKeuangan=new Chart(el, { type:'line', data:{ labels:months, datasets:[{ label:'Total', data:totals, borderColor:'#059669', backgroundColor:'rgba(5,150,105,0.12)', fill:true, tension:.35, pointRadius:3 }] }, options:this.chartOpts(true) });
+    },
+
+    // ================= UTIL =================
+    fmtDate(d){ if(!d) return '-'; const dt=new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}); },
+    fmtRupiah(n){ n=Number(n||0); return 'Rp' + n.toLocaleString('id-ID'); },
+    todayISO(){ return new Date().toISOString().slice(0,10); },
+    nowText(){ return new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); },
+    uid(){ return 'id-'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); },
+    generateKwitansi(){ return 'KW-'+new Date().getFullYear()+'-'+String((this.pembayaran?this.pembayaran.length:0)+1).padStart(4,'0'); },
+    logActivity(aksi){ this.activityLog.unshift({ id:this.uid(), user: this.auth.user?this.auth.user.name:'Sistem', aksi, waktu:this.nowText() }); if(this.activityLog.length>50) this.activityLog.pop(); },
+    toast(type,title,message){ const id=this.uid(); this.toasts.push({id,type,title,message}); setTimeout(()=>{ this.toasts=this.toasts.filter(t=>t.id!==id); }, 4500); },
+
+    persist(){
+      try{
+        const payload={ santri:this.santri, pengurus:this.pengurus, guru:this.guru, alumni:this.alumni, pembayaran:this.pembayaran, perizinan:this.perizinan, pelanggaran:this.pelanggaran, riwayatLog:this.riwayatLog, pengumuman:this.pengumuman, agenda:this.agenda, users:this.users, activityLog:this.activityLog };
+        localStorage.setItem('pesantrenpro_data', JSON.stringify(payload));
+      }catch(e){ console.warn('Gagal menyimpan data lokal', e); }
+    },
+    loadPersisted(){
+      try{
+        const raw=localStorage.getItem('pesantrenpro_data');
+        if(raw){ const data=JSON.parse(raw); Object.assign(this, data); return true; }
+      }catch(e){}
+      return false;
+    },
+
+    // ================= SEED DATA =================
+    seed(){
+      this.users=[
+        { id:this.uid(), username:'admin@alhidayah.sch.id', name:'H. Ahmad Fauzan', role:'super_admin' },
+        { id:this.uid(), username:'bendahara@alhidayah.sch.id', name:'Siti Maryam', role:'bendahara' },
+        { id:this.uid(), username:'keamanan@alhidayah.sch.id', name:'Ust. Zainal Abidin', role:'keamanan' }
+      ];
+
+      const santriSeed=[
+        ['Muhammad Rizky Ramadhan','L','MTS',2023,'Aktif','Jepara'],
+        ['Ahmad Fadhil Hakim','L','MA',2021,'Aktif','Kudus'],
+        ['Siti Nur Azizah','P','MI',2024,'Aktif','Demak'],
+        ['Fatimah Az-Zahra','P','MTS',2022,'Aktif','Pati'],
+        ['Muhammad Iqbal Maulana','L','MA',2020,'Aktif','Jepara'],
+        ['Khadijah Salsabila','P','MA',2021,'Aktif','Kudus'],
+        ['Abdurrahman Hakim','L','MI',2025,'Aktif','Rembang'],
+        ['Zahra Aulia Rahman','P','MTS',2023,'Aktif','Jepara'],
+        ['Muhammad Faiz Ramadhan','L','MTS',2022,'Nonaktif','Demak'],
+        ['Aisyah Putri Ramadhani','P','MI',2024,'Aktif','Pati'],
+        ['Umar Abdul Aziz','L','MA',2020,'Aktif','Kudus'],
+        ['Hafshah Nadia Putri','P','MTS',2023,'Aktif','Jepara'],
+        ['Yusuf Al Ghifari','L','MI',2025,'Aktif','Rembang'],
+        ['Maryam Qonita','P','MA',2021,'Nonaktif','Demak']
+      ];
+      this.santri = santriSeed.map((r,i)=>({
+        id:this.uid(), jenis_pondok: r[1]==='L'?'Pondok Putra':'Pondok Putri', jenjang_pondok:r[2], nis:String(r[3])+String(100+i), nisn:String(1000000000+i*37),
+        nik:String(3300000000000000+i*1234), nama_lengkap:r[0], jenis_kelamin:r[1], tempat_lahir:r[5], tanggal_lahir:`${r[3]-13}-0${(i%9)+1}-1${i%9}`,
+        foto:'', sekolah_asal:'MI Miftahul Huda '+r[5], jenjang_sekolah_asal: r[2]==='MI' ? '' : (r[2]==='MTS' ? 'SD/MI' : 'SMP/MTS'),
+        alamat:'Jl. Merdeka No. '+(i+3)+', RT 02/RW 01', provinsi:'Jawa Tengah', kabupaten:r[5], kecamatan:'Kecamatan '+r[5], kode_pos:'594'+(10+i),
+        nama_ayah:'Bpk. '+r[0].split(' ')[0]+' Senior', nik_ayah:String(3300000000000001+i*111), status_ayah:'Masih Hidup', pekerjaan_ayah:'Wiraswasta', penghasilan_ayah:'Rp2.500.000',
+        nama_ibu:'Ibu '+r[0].split(' ')[0]+' Senior', nik_ibu:String(3300000000000002+i*222), status_ibu:'Masih Hidup', pekerjaan_ibu:'Ibu Rumah Tangga', penghasilan_ibu:'-',
+        telepon_ortu:'0812'+String(3000000+i*171), status_rumah:'Milik Sendiri', foto_kk:'', status:r[4], angkatan:r[3]
+      }));
+
+      this.pengurus=[
+        { id:this.uid(), foto:'', nama:'Muhammad Alwi Shihab', jabatan:'Ketua Pengurus', jenis_kelamin:'L', alamat:'Jepara', no_hp:'081234500001', periode:'2024-2026', status:'Aktif' },
+        { id:this.uid(), foto:'', nama:'Nurul Hidayah', jabatan:'Sekretaris', jenis_kelamin:'P', alamat:'Kudus', no_hp:'081234500002', periode:'2024-2026', status:'Aktif' },
+        { id:this.uid(), foto:'', nama:'Ahmad Baihaqi', jabatan:'Koordinator Keamanan', jenis_kelamin:'L', alamat:'Demak', no_hp:'081234500003', periode:'2024-2026', status:'Aktif' },
+        { id:this.uid(), foto:'', nama:'Halimah Tussa\'diyah', jabatan:'Koordinator Kesehatan', jenis_kelamin:'P', alamat:'Pati', no_hp:'081234500004', periode:'2024-2026', status:'Aktif' },
+        { id:this.uid(), foto:'', nama:'Ridwan Kamil Hakim', jabatan:'Bendahara Pengurus', jenis_kelamin:'L', alamat:'Jepara', no_hp:'081234500005', periode:'2023-2025', status:'Nonaktif' },
+        { id:this.uid(), foto:'', nama:'Zulfa Kamila', jabatan:'Koordinator Kebersihan', jenis_kelamin:'P', alamat:'Rembang', no_hp:'081234500006', periode:'2024-2026', status:'Aktif' }
+      ];
+
+      const guruSeed=[
+        ['KH. Abdul Malik','Madrasah Qur\'an','L'],['Ust. Mahmud Yunus','Madrasah Qur\'an','L'],['Ustdzh. Rohmah Kamila','Madrasah Qur\'an','P'],
+        ['Ust. Faturrahman','Madrasah Diniyah','L'],['Ustdzh. Latifah Zahra','Madrasah Diniyah','P'],['Ustdzh. Nur Kholidah','Madrasah Diniyah','P'],
+        ['Ust. Syamsul Arifin','Amtsilati','L'],['Ust. Anwar Sanusi','Amtsilati','L'],['Ustdzh. Umi Kulsum','Amtsilati','P']
+      ];
+      this.guru = guruSeed.map((g,i)=>({ id:this.uid(), foto:'', nama:g[0], jenis_guru:g[1], jenis_kelamin:g[2], no_hp:'08135'+String(500000+i*81), alamat:'Alhidayah Induk', status:'Aktif' }));
+
+      const alumniSeed=[
+        ['Muhammad Ilham Nugroho','L',2014,2020,'Guru MTs'],['Rahmawati Indah Sari','P',2015,2021,'Wiraswasta'],
+        ['Fauzan Adzima','L',2013,2019,'Mahasiswa'],['Sarah Nabila Putri','P',2016,2022,'Wirausaha'],
+        ['Dzikri Maulana','L',2012,2018,'PNS'],['Aulia Rahmah','P',2014,2020,'Guru TPQ'],
+        ['Ilham Akbar Wicaksono','L',2017,2023,'Mahasiswa'],['Nadia Ramadhani','P',2013,2019,'Ibu Rumah Tangga']
+      ];
+      this.alumni = alumniSeed.map((a,i)=>({ id:this.uid(), foto:'', nama:a[0], jenis_kelamin:a[1], tahun_masuk:a[2], tahun_lulus:a[3], pekerjaan:a[4], alamat:'Jawa Tengah', no_hp:'08217'+String(600000+i*93), status:'Terverifikasi', catatan:'' }));
+
+      const jenisBayar=['Syahriah','Uang Makan','Tabungan'];
+      this.pembayaran = this.santri.slice(0,10).map((s,i)=>({
+        id:this.uid(), santri_id:s.id, nama_santri:s.nama_lengkap, jenis: jenisBayar[i%3], nominal: [150000,250000,100000][i%3],
+        tanggal:`2026-0${(i%6)+1}-1${i%9}`, metode: ['Tunai','Transfer Bank','QRIS'][i%3], status: i%5===0?'Pending':'Lunas', bukti:'', no_kwitansi:'KW-2026-'+String(i+1).padStart(4,'0')
+      }));
+
+      this.perizinan = this.santri.slice(0,5).map((s,i)=>({
+        id:this.uid(), santri_id:s.id, nama_santri:s.nama_lengkap, tgl_keluar:'2026-08-0'+(i+1), jam_keluar:'08:0'+i, tgl_kembali:'2026-08-0'+(i+2), jam_kembali:'17:0'+i,
+        tujuan:['Pulang ke rumah','Kontrol kesehatan','Acara keluarga','Ujian sekolah asal','Keperluan administrasi'][i], penanggung_jawab:'Orang Tua/Wali', surat_izin:'', status: i<2 ? 'Keluar':'Kembali'
+      }));
+
+      this.pelanggaran = this.santri.slice(5,9).map((s,i)=>({
+        id:this.uid(), santri_id:s.id, nama_santri:s.nama_lengkap, tanggal:'2026-07-1'+i, jenis_pelanggaran:['Ringan','Sedang','Ringan','Berat'][i],
+        sanksi:['Teguran lisan','Menghafal 1 halaman tambahan','Teguran tertulis','Pemanggilan wali santri'][i], catatan:''
+      }));
+
+      this.riwayatLog = this.perizinan.map(p=>({ id:this.uid(), santri_id:p.santri_id, nama_santri:p.nama_santri, tipe: p.status==='Keluar'?'Keluar':'Masuk', waktu:this.fmtDate(p.tgl_keluar)+' '+p.jam_keluar, keterangan:'Izin: '+p.tujuan }));
+
+      this.pengumuman=[
+        { id:this.uid(), judul:'Libur Semester Ganjil dimulai 20 Desember', tanggal:'2 hari lalu' },
+        { id:this.uid(), judul:'Pembayaran Syahriah paling lambat tanggal 10', tanggal:'4 hari lalu' },
+        { id:this.uid(), judul:'Jadwal Ujian Tahfidz telah diperbarui', tanggal:'1 minggu lalu' }
+      ];
+      this.agenda=[
+        { id:this.uid(), judul:'Kajian Kitab Kuning', bulan:'Agu', tgl:'12', waktu:'19:30', tempat:'Aula Utama' },
+        { id:this.uid(), judul:'Wisuda Tahfidz Angkatan 2026', bulan:'Agu', tgl:'20', waktu:'08:00', tempat:'Masjid Pondok' },
+        { id:this.uid(), judul:'Rapat Wali Santri', bulan:'Sep', tgl:'03', waktu:'09:00', tempat:'Aula Utama' },
+        { id:this.uid(), judul:'Peringatan Maulid Nabi', bulan:'Sep', tgl:'15', waktu:'19:00', tempat:'Masjid Pondok' }
+      ];
+      this.activityLog=[
+        { id:this.uid(), user:'H. Ahmad Fauzan', aksi:'menambahkan santri baru', waktu:'10 menit lalu' },
+        { id:this.uid(), user:'Siti Maryam', aksi:'mencatat pembayaran syahriah', waktu:'1 jam lalu' },
+        { id:this.uid(), user:'Ust. Zainal Abidin', aksi:'memperbarui data perizinan', waktu:'3 jam lalu' },
+        { id:this.uid(), user:'H. Ahmad Fauzan', aksi:'mengekspor laporan bulanan', waktu:'Kemarin' },
+        { id:this.uid(), user:'Siti Maryam', aksi:'mencetak kwitansi pembayaran', waktu:'Kemarin' },
+        { id:this.uid(), user:'H. Ahmad Fauzan', aksi:'masuk ke sistem', waktu:'2 hari lalu' }
+      ];
+      this.notifications = this.seedNotifications();
+    }
+  };
+}
+</script>
+</body>
+</html>
